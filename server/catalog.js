@@ -13,11 +13,14 @@ export const catalogSearch = (query, limit, entries = catalog.tracks) => {
     const all = new Set([...title, ...artist]);
     if (!terms.every(term => all.has(term))) return null;
     const titleText = title.join(' ');
+    const artistText = artist.join(' ');
     const queryText = terms.join(' ');
     const score = (titleText === queryText ? 12 : 0)
       + (titleText.startsWith(queryText) ? 5 : 0)
+      + (artistText === queryText ? 10 : 0)
+      + (artistText.startsWith(queryText) ? 3 : 0)
       + terms.filter(term => title.includes(term)).length * 3
-      + terms.filter(term => artist.includes(term)).length
+      + terms.filter(term => artist.includes(term) && !title.includes(term)).length
       - Math.max(0, title.length - terms.length) * 0.05;
     return { track, score };
   }).filter(Boolean).sort((a, b) => b.score - a.score)
