@@ -4,10 +4,6 @@ export const PRIMARY_PROVIDER = 'primary';
 export const METING_PROVIDERS = ['netease', 'tencent', 'kugou', 'kuwo'];
 export const PLAYBACK_PROVIDERS = [PRIMARY_PROVIDER, ...METING_PROVIDERS];
 
-const MONOCHROME_BASE_URL = String(
-  process.env.MONOCHROME_BASE_URL || 'https://tracks.monochrome.st'
-).replace(/\/+$/, '');
-
 const createProvider = source => {
   const meting = new Meting(source);
   const cookie = process.env[`METING_${source.toUpperCase()}_COOKIE`];
@@ -103,54 +99,48 @@ export const normalizeMetingTrack = (track, provider) => {
 const normalizeMonochromeTrack = track => {
   if (!track || typeof track !== 'object') return null;
 
-  const id = String(track.trackId ?? track.id ?? track.recordingId ?? '');
+  const id = String(track.id ?? '');
   if (!id) return null;
 
-  const artists = Array.isArray(track.artistNames) && track.artistNames.length
-    ? track.artistNames.filter(Boolean)
-    : Array.isArray(track.artists) && track.artists.length
-      ? track.artists.map(artist => artist?.name || artist?.displayName).filter(Boolean)
-      : [track.artistName || track.artist?.name].filter(Boolean);
-
-  const artwork = String(track.artwork || track.cover || '');
-  const duration = Number(track.duration || 0);
+  const artists = Array.isArray(track.artist)
+    ? track.artist.filter(Boolean)
+    : [track.artist].filter(Boolean);
 
   return {
     id,
-    name: track.title || track.name || 'Unknown track',
+    name: track.name || 'Unknown track',
     artist: artists.length ? artists : ['Unknown artist'],
-    album: track.albumTitle || track.releaseTitle || track.release?.title || '',
-    pic_id: artwork,
+    album: track.album || '',
+    pic_id: String(track.artwork || ''),
     url_id: id,
     lyric_id: id,
     source: PRIMARY_PROVIDER,
-    duration: duration > 1000 ? Math.round(duration / 1000) : Math.round(duration),
+    duration: Number(track.duration || 0),
     explicit: Boolean(track.explicit),
-    isrc: String(track.isrc || ''),
-    codec: 'flac',
-    lossless: true
+    scraped: true
   };
 };
 
-export const searchMonochrome = async (query, limit, timeoutMs = 3200) => {
+export const searchMonochrome = async (query, limit, timeoutMs = 12000) => {
   const started = performance.now();
-  const url = new URL(`${MONOCHROME_BASE_URL}/search/tracks`);
-  url.searchParams.set('q', query);
-  url.searchParams.set('limit', String(limit));
 
-  const response = await withTimeout(
-    fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'Meting-API/0.4'
-      },
-      redirect: 'follow'
-    }),
-    timeoutMs,
-    null
-  );
+  try {
+    const { scrapeMonochromeSearch } = await import('./monochrome-scraper.js');
+    const tracks = await withTimeout(
+      scrapeMonochromeSearch(query, limit),
+      timeoutMs,
+      []
+    );
 
-  if (!response?.ok) {
+    return {
+      provider: PRIMARY_PROVIDER,
+      ok: Array.isArray(tracks),
+      elapsedMs: Math.round(performance.now() - started),
+      tracks: (Array.isArray(tracks) ? tracks : [])
+        .map(normalizeMonochromeTrack)
+        .filter(Boolean)
+    };
+  } catch {
     return {
       provider: PRIMARY_PROVIDER,
       ok: false,
@@ -158,20 +148,6 @@ export const searchMonochrome = async (query, limit, timeoutMs = 3200) => {
       tracks: []
     };
   }
-
-  const payload = await response.json().catch(() => ({}));
-  const rawTracks = Array.isArray(payload?.tracks)
-    ? payload.tracks
-    : Array.isArray(payload)
-      ? payload
-      : [];
-
-  return {
-    provider: PRIMARY_PROVIDER,
-    ok: true,
-    elapsedMs: Math.round(performance.now() - started),
-    tracks: rawTracks.map(normalizeMonochromeTrack).filter(Boolean)
-  };
 };
 
 export const searchMetingProvider = async (provider, query, limit, timeoutMs = 2100) => {
@@ -339,11 +315,16 @@ export const resolvePlayback = async (source, id, bitrate = 320) => {
   }
 
   if (source === PRIMARY_PROVIDER) {
+    const { scrapeMonochromePlayback } = await import('./monochrome-scraper.js');
+    const scraped = await scrapeMonochromePlayback(id);
+
+    if (!scraped?.url) {
+      throw new Error('Primary site scraper could not resolve playback');
+    }
+
     return {
-      url: `${MONOCHROME_BASE_URL}/track/${encodeURIComponent(id)}`,
-      proxy: true,
-      codec: 'flac',
-      lossless: true
+      ...scraped,
+      proxy: true
     };
   }
 

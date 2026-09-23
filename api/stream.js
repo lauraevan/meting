@@ -18,9 +18,16 @@ export default async function handler(req, res) {
 
     if (media.proxy) {
       const headers = {
+        ...(media.headers || {}),
         Accept: 'audio/*',
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': media.headers?.['user-agent'] || 'Mozilla/5.0'
       };
+
+      for (const key of ['host', 'content-length', 'connection', 'accept-encoding']) {
+        delete headers[key];
+        delete headers[key.toUpperCase()];
+      }
+
       if (req.headers.range) headers.Range = req.headers.range;
 
       const upstream = await fetch(media.url, {

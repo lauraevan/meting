@@ -64,5 +64,12 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.49.0"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "153.0.0",
+    "puppeteer-core": "25.11.0"
   }
 }
