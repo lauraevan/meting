@@ -1,8 +1,10 @@
-<p align="center">
-<img src="https://user-images.githubusercontent.com/2666735/30165599-36623bea-93a6-11e7-8956-1ddf99ce0e6f.png" alt="Meting">
-</p>
+# Synth
 
-> :cake: A powerful music API framework for Node.js
+Synth is the music player and API deployed from this repository. The
+`@meting/core` package remains the original Meting-compatible Node.js library;
+its public package name and exports are retained for existing users.
+
+## Meting-compatible library
 
 ## Introduction
 
@@ -17,12 +19,12 @@ Meting is a powerful music API framework designed to accelerate music-related de
 - **🔐 Built-in Encryption** - Platform-specific encryption and signing built-in
 - **⚡ Chain-able API** - Fluent interface design for elegant code
 
-## Vercel player
+## Synth player
 
 The player and public music endpoints use the approved
 `https://api.qijieya.cn/meting/` endpoint for search, full-track audio,
 artwork, and lyrics. Deezer enriches matching song metadata only. The browser
-calls Meting's own `/api/search`, `/api/stream`, `/api/artwork`, and
+calls Synth's own `/api/search`, `/api/stream`, `/api/artwork`, and
 `/api/lyrics` endpoints; audio streams through the server with byte ranges.
 The compatible `/api?type=search&id=...` endpoint also returns local media
 paths. The upstream service can occasionally return no search results or an
@@ -31,9 +33,11 @@ unavailable stream, which the API reports directly.
 Search results are cached at the CDN for 15 minutes and in the browser for
 15 minutes. The player shows a recent result immediately and refreshes it in
 the background when needed. A short-lived media URL cache avoids re-resolving
-the same song when a listener seeks; all audio still flows through Meting's
-stream proxy. Fresh, uncached searches still depend on the upstream response
-time.
+the same song when a listener seeks; all audio still flows through Synth's
+stream proxy. The player prepares the first result after a search and the next
+song while the current song plays. These prepared streams are reused on Play
+or Next, so common listening actions avoid a fresh stream request. Fresh,
+uncached songs still depend on the upstream response time.
 
 ## Requirements
 

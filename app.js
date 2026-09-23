@@ -19,19 +19,20 @@ const state = {
   repeat: false,
   shuffle: false,
   playing: false,
-  likedTracks: (JSON.parse(localStorage.getItem('meting:liked') || '[]'))
+  likedTracks: (JSON.parse(localStorage.getItem('synth:liked') || localStorage.getItem('meting:liked') || '[]'))
     .filter(track => /^\d+$/.test(String(track.id)) && !track.source),
   searchRequest: 0,
   playbackRequest: 0
 };
 
-const audio = $('#audio');
+let audio = $('#audio');
+let standbyAudio = $('#nextAudio');
 let previewTimer;
-const SEARCH_CACHE_KEY = 'meting:search:v2';
+const SEARCH_CACHE_KEY = 'synth:search:v1';
 const SEARCH_CACHE_TTL = 15 * 60 * 1000;
 const searchCache = (() => {
   try {
-    const saved = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || '{}');
+    const saved = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || localStorage.getItem('meting:search:v2') || '{}');
     return saved && typeof saved === 'object' ? saved : {};
   } catch { return {}; }
 })();
@@ -94,12 +95,18 @@ const lyricsUrl = track => `/api/lyrics?id=${encodeURIComponent(track.id)}`;
 // Warm the actual player element. Keeping its src when Play is tapped lets the
 // browser reuse its existing connection and buffered media instead of starting
 // another stream request. Never replace an active song just to preload one.
-const prepareTrack = track => {
-  if (!track || state.current) return;
+const prepareTrack = (track, player = audio) => {
+  if (!track || (player === audio && state.current)) return;
   const url = streamUrl(track);
-  if (audio.getAttribute('src') === url) return;
-  audio.src = url;
-  audio.load();
+  if (player.getAttribute('src') === url) return;
+  player.src = url;
+  player.load();
+};
+
+const prepareNext = () => {
+  if (!state.current || state.shuffle || !state.tracks.length) return;
+  const nextIndex = state.currentIndex >= state.tracks.length - 1 ? 0 : state.currentIndex + 1;
+  prepareTrack(state.tracks[nextIndex], standbyAudio);
 };
 
 const setArtwork = (element, track, size) => {
@@ -126,7 +133,7 @@ const isLiked = track =>
   Boolean(track && state.likedTracks.some(item => item.id === track.id));
 
 const saveLiked = () => {
-  localStorage.setItem('meting:liked', JSON.stringify(state.likedTracks));
+  localStorage.setItem('synth:liked', JSON.stringify(state.likedTracks));
 };
 
 const renderQueue = () => {
@@ -375,6 +382,10 @@ const playIndex = async index => {
   if (!track) return;
 
   clearTimeout(previewTimer);
+  if (state.current && standbyAudio.getAttribute('src') === streamUrl(track)) {
+    audio.pause();
+    [audio, standbyAudio] = [standbyAudio, audio];
+  }
   state.currentIndex = index;
   state.current = track;
   state.recentTracks = [track, ...state.recentTracks.filter(item => item.id !== track.id)].slice(0, 30);
@@ -502,6 +513,7 @@ $('#repeatButton').addEventListener('click', event => {
   state.repeat = !state.repeat;
   event.currentTarget.classList.toggle('active', state.repeat);
   audio.loop = state.repeat;
+  standbyAudio.loop = state.repeat;
 });
 
 $('#shuffleButton').addEventListener('click', event => {
@@ -568,31 +580,38 @@ document.addEventListener('click', event => {
   }
 });
 
-audio.addEventListener('play', () => {
-  state.playing = true;
-  updatePlayerUI();
-});
+for (const player of [audio, standbyAudio]) {
+  player.addEventListener('playing', () => {
+    if (player !== audio) return;
+    state.playing = true;
+    speedText.textContent = 'Playing';
+    updatePlayerUI();
+    prepareNext();
+  });
 
-audio.addEventListener('pause', () => {
-  state.playing = false;
-  updatePlayerUI();
-});
+  player.addEventListener('pause', () => {
+    if (player !== audio) return;
+    state.playing = false;
+    updatePlayerUI();
+  });
 
-audio.addEventListener('error', () => {
-  if (!state.current) return;
-  playbackFailed();
-});
+  player.addEventListener('error', () => {
+    if (player !== audio || !state.current) return;
+    playbackFailed();
+  });
 
-audio.addEventListener('ended', () => {
-  if (!state.repeat) next();
-});
+  player.addEventListener('ended', () => {
+    if (player === audio && !state.repeat) next();
+  });
 
-audio.addEventListener('timeupdate', () => {
-  const duration = audio.duration || 0;
-  progress.value = duration ? Math.round((audio.currentTime / duration) * 1000) : 0;
-  $('#currentTime').textContent = formatTime(audio.currentTime);
-  $('#duration').textContent = formatTime(duration);
-});
+  player.addEventListener('timeupdate', () => {
+    if (player !== audio) return;
+    const duration = audio.duration || 0;
+    progress.value = duration ? Math.round((audio.currentTime / duration) * 1000) : 0;
+    $('#currentTime').textContent = formatTime(audio.currentTime);
+    $('#duration').textContent = formatTime(duration);
+  });
+}
 
 progress.addEventListener('input', () => {
   if (!audio.duration) return;
@@ -601,9 +620,11 @@ progress.addEventListener('input', () => {
 
 volume.addEventListener('input', () => {
   audio.volume = Number(volume.value);
+  standbyAudio.volume = Number(volume.value);
 });
 
 audio.volume = Number(volume.value);
+standbyAudio.volume = audio.volume;
 
 const bootstrap = async () => {
   renderQuickGrid();

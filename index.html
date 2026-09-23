@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#080808" />
-  <title>Meting</title>
+  <title>Synth</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="brand-copy">
-          <strong>Meting</strong>
+          <strong>Synth</strong>
           <small>music</small>
         </div>
       </div>
@@ -46,7 +46,7 @@
         <div class="api-badge">
           <span class="status-dot"></span>
           <div>
-            <strong>Meting API</strong>
+            <strong>Synth API</strong>
             <small id="apiStatus">Connecting…</small>
           </div>
         </div>
@@ -67,7 +67,7 @@
 
         <div class="top-actions">
           <div class="speed-pill" role="status"><span class="pulse-dot"></span><span id="speedText">Ready</span></div>
-          <button class="profile-button" title="Meting">M</button>
+          <button class="profile-button" title="Synth">S</button>
         </div>
       </header>
 
@@ -125,7 +125,7 @@
         <div class="mini-art placeholder" id="miniArt"></div>
         <div class="mini-copy">
           <strong id="miniTitle">Select a track</strong>
-          <span id="miniArtist">Meting</span>
+          <span id="miniArtist">Synth</span>
         </div>
         <button class="heart-button" id="heartButton" aria-label="Favorite">♡</button>
       </div>
@@ -151,6 +151,7 @@
         <button class="queue-button" id="queueButton">Queue <span id="queueCount">0</span></button>
       </div>
       <audio id="audio" preload="metadata"></audio>
+      <audio id="nextAudio" preload="metadata"></audio>
     </footer>
   </div>
 
