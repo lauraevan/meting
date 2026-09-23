@@ -1,5 +1,6 @@
 import { clamp, matchScore, searchDeezer } from '../server/music.js';
 import { searchQijieya } from '../server/qijieya.js';
+import { catalogSearch } from '../server/catalog.js';
 
 const cache = new Map();
 const TTL = 15 * 60 * 1000;
@@ -16,18 +17,28 @@ export default async function handler(req, res) {
   if (!entry || entry.expires < Date.now()) {
     const value = (async () => {
       const started = performance.now();
+      const indexed = catalogSearch(query, limit);
+      if (indexed.length >= Math.min(limit, 6)) {
+        return { query, elapsedMs: Math.round(performance.now() - started), tracks: indexed };
+      }
       const [music, metadata] = await Promise.all([
         searchQijieya(query, limit),
         searchDeezer(query, Math.max(limit * 2, 20), 1100).catch(() => ({ tracks: [] }))
       ]);
-      if (!music.ok) throw new Error('Music search is temporarily unavailable');
-      const tracks = music.tracks.map(track => {
+      if (!music.ok && !indexed.length) throw new Error('Music search is temporarily unavailable');
+      const live = music.tracks.map(track => {
         const best = (metadata.tracks || []).map(item => ({ item, score: matchScore(track, item) }))
           .sort((a, b) => b.score - a.score)[0];
         if (!best || best.score < 0.9) return track;
         return { ...track, album: best.item.album, duration: best.item.duration,
           explicit: best.item.explicit };
       });
+      const seen = new Set();
+      const tracks = [...live, ...indexed].filter(track => {
+        if (seen.has(track.id)) return false;
+        seen.add(track.id);
+        return true;
+      }).slice(0, limit);
       return { query, elapsedMs: Math.round(performance.now() - started), tracks };
     })();
     entry = { value, expires: Date.now() + TTL };

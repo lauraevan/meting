@@ -39,6 +39,14 @@ song while the current song plays. These prepared streams are reused on Play
 or Next, so common listening actions avoid a fresh stream request. Fresh,
 uncached songs still depend on the upstream response time.
 
+The `Update Synth music index` workflow scrapes a bounded set of searches from
+the owner's approved endpoint each day and commits normalized song metadata to
+`data/catalog.js`. Synth searches this durable index first and uses a live
+lookup for queries the index cannot satisfy. The index stores song IDs and
+metadata, not audio or expiring media URLs; playback continues through the
+server-side stream proxy. Add search terms to `data/catalog-seeds.json` to
+expand coverage without changing the player.
+
 ## Requirements
 
 - Node.js >= 12.0.0

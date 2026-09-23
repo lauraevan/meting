@@ -1,0 +1,39 @@
+name: Update Synth music index
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 4 * * *'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/scrape-catalog.yml'
+      - 'scripts/scrape-catalog.mjs'
+      - 'data/catalog-seeds.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: synth-catalog
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scrape approved endpoint
+        run: node scripts/scrape-catalog.mjs
+      - name: Save indexed songs
+        run: |
+          git add data/catalog.js
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'Synth index bot'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh Synth scraped music index'
+          git push
