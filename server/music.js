@@ -66,6 +66,11 @@ const overlap = (a, b) => {
 };
 
 export const matchScore = (canonical, candidate) => {
+  const recordingTag = name => {
+    const tags = String(name || '').toLowerCase().match(/\b(live|remix|instrumental|acoustic|sped up|slowed|cover|karaoke)\b/g);
+    return [...new Set(tags || [])].sort().join(':');
+  };
+  if (recordingTag(canonical.name) !== recordingTag(candidate.name)) return 0;
   const title = overlap(canonical.name, candidate.name);
   const artist = overlap(canonical.artist.join(' '), candidate.artist.join(' '));
   const album = canonical.album && candidate.album
