@@ -47,4 +47,4 @@ This runs the site through `vercel dev`, including the same `/api/*` functions u
 
 Import `lauraevan/meting` into Vercel and deploy the `demo-player` branch for the current preview.
 
-The repository includes `vercel.json`, so the root URL routes to the desktop player and the `api/` directory is deployed as Vercel Functions.
+The desktop player lives at the repository root (`index.html`, `app.js`, and `styles.css`), while the `api/` directory is deployed as Vercel Functions.
