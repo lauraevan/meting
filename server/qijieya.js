@@ -31,11 +31,11 @@ export const normalizeQijieyaTrack = item => {
   };
 };
 
-export async function searchQijieya(query, limit) {
+export async function searchQijieya(query, limit, page = 1) {
   const started = performance.now();
   const provider = 'qijieya';
   try {
-    const response = await fetch(qijieyaUrl('search', query, { limit }), {
+    const response = await fetch(qijieyaUrl('search', query, { limit, page }), {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(11000)
     });

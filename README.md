@@ -46,6 +46,11 @@ lookup for queries the index cannot satisfy. The index stores song IDs and
 metadata, not audio or expiring media URLs; playback continues through the
 server-side stream proxy. Add search terms to `data/catalog-seeds.json` to
 expand coverage without changing the player.
+The scraper now follows up to four search pages per term and stops when the
+service runs out of results or repeats a page. This improves coverage, but
+the endpoint has no exhaustive catalog listing: a complete index requires a
+catalog export or a listing route from the owner. The Git-backed index is
+also bounded to 10,000 tracks; a full catalog needs dedicated storage.
 
 ## Requirements
 
