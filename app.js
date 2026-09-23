@@ -5,7 +5,8 @@ const providerMeta = {
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
   kugou: { name: 'KuGou', short: 'KG' },
-  kuwo: { name: 'Kuwo', short: 'KW' }
+  kuwo: { name: 'Kuwo', short: 'KW' },
+  deezer: { name: 'Deezer preview', short: 'DZ' }
 };
 
 const quickSearches = [
@@ -92,6 +93,7 @@ const orderedSources = track =>
     .sort((a, b) => (state.latencies[a] ?? 99999) - (state.latencies[b] ?? 99999));
 
 const streamUrl = (track, source = track.source) => {
+  if (source === 'deezer') return track.preview;
   const data = sourceData(track, source);
   return `/api/stream?source=${encodeURIComponent(source)}&id=${encodeURIComponent(data.url_id || data.id || '')}&br=320`;
 };
@@ -316,6 +318,9 @@ const updatePlayerUI = () => {
   $('#nowArtist').textContent = track.artist.join(', ');
   $('#nowSource').textContent = providerName(track.source);
   $('#nowSourceIcon').textContent = providerShort(track.source);
+  $('#nowQuality').textContent = track.source === 'deezer'
+    ? '30-second preview'
+    : 'Automatic source selection';
   $('#heartButton').classList.toggle('active', isLiked(track));
   $('#heartButton').textContent = isLiked(track) ? '♥' : '♡';
 
@@ -350,22 +355,23 @@ const loadLyrics = async track => {
   }
 };
 
-const startCurrentSource = async () => {
+const startCurrentSource = async (request = state.playbackRequest) => {
   const track = state.current;
-  if (!track?.source) return;
+  if (!track?.source || request !== state.playbackRequest) return;
 
   speedText.textContent = `Resolving ${providerName(track.source)}…`;
   audio.src = streamUrl(track);
 
   try {
     await audio.play();
-    speedText.textContent = providerName(track.source);
+    if (request === state.playbackRequest) speedText.textContent = providerName(track.source);
   } catch {
-    await tryNextSource();
+    if (request === state.playbackRequest) await tryNextSource(request);
   }
 };
 
-const tryNextSource = async () => {
+const tryNextSource = async (request = state.playbackRequest) => {
+  if (request !== state.playbackRequest) return;
   const track = state.current;
   if (!track) return;
 
@@ -373,16 +379,23 @@ const tryNextSource = async () => {
   const nextSource = orderedSources(track).find(source => !state.failedSources.has(source));
 
   if (!nextSource) {
-    state.playing = false;
-    speedText.textContent = 'No playable source';
-    updatePlayerUI();
-    toast('Every matched source failed for this track.');
-    return;
+    if (track.preview && !state.failedSources.has('deezer')) {
+      track.source = 'deezer';
+      toast('Full track unavailable. Playing a 30-second preview.');
+    } else {
+      state.playing = false;
+      speedText.textContent = 'No playable source';
+      updatePlayerUI();
+      toast('This track is unavailable from the current sources.');
+      return;
+    }
+  } else {
+    track.source = nextSource;
   }
 
-  track.source = nextSource;
+  state.playbackRequest += 1;
   updatePlayerUI();
-  await startCurrentSource();
+  await startCurrentSource(state.playbackRequest);
 };
 
 const playIndex = async index => {
@@ -392,6 +405,7 @@ const playIndex = async index => {
   state.currentIndex = index;
   state.current = track;
   state.failedSources = new Set();
+  state.playbackRequest += 1;
 
   const fastest = orderedSources(track)[0];
   if (fastest) track.source = fastest;
@@ -400,7 +414,7 @@ const playIndex = async index => {
   state.playing = true;
   updatePlayerUI();
   loadLyrics(track);
-  await startCurrentSource();
+  await startCurrentSource(state.playbackRequest);
 };
 const next = () => {
   if (!state.tracks.length) return;
@@ -421,7 +435,7 @@ const previous = () => {
   playIndex(previousIndex);
 };
 
-const search = async query => {
+const search = async (query, { scroll = true } = {}) => {
   query = String(query || '').trim();
   if (!query) return;
 
@@ -457,7 +471,7 @@ const search = async query => {
 
     renderSources();
     renderTracks();
-    $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (scroll) $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     if (request !== state.searchRequest) return;
     state.tracks = [];
@@ -580,7 +594,9 @@ audio.addEventListener('pause', () => {
 });
 
 audio.addEventListener('error', () => {
-  if (state.current) tryNextSource();
+  if (!state.current) return;
+  const source = new URL(audio.currentSrc || audio.src, location.href).searchParams.get('source');
+  if (!source || source === state.current.source) tryNextSource(state.playbackRequest);
 });
 
 audio.addEventListener('ended', () => {
@@ -614,13 +630,13 @@ const bootstrap = async () => {
     const response = await fetch('/api/health');
     const data = await response.json();
     $('#apiStatus').textContent = response.ok && data.ok
-      ? 'Deezer meta · Meting art'
+      ? 'Service online'
       : 'Unavailable';
   } catch {
     $('#apiStatus').textContent = 'Unavailable';
   }
 
-  search('The Weeknd');
+  search('The Weeknd', { scroll: false });
 };
 
 bootstrap();
