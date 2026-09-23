@@ -7,23 +7,10 @@ A desktop-first demo client for the standalone Meting music API work, designed t
 The demo deliberately separates catalog presentation from playback resolution:
 
 - **Deezer** provides the canonical search metadata used by the UI: track title, artist, album, duration, explicit flag, ranking, and temporary fallback artwork.
-- **Apple Music** is the preferred artwork source. Artwork is looked up server-side from the Apple Music catalog and returned through the Vercel API.
-- **Meting providers** provide playback matching and lyrics. The current playback pool is NetEase, Tencent, KuGou, and Kuwo.
+- **Meting providers** supply the default artwork through their native cover IDs, so artwork stays tied to the matched music source for now.
+- **Meting providers** provide playback matching, artwork, and lyrics. The current provider pool is NetEase, Tencent, KuGou, and Kuwo.
 - Search requests run Deezer and playback providers concurrently, then match provider tracks against the Deezer result set.
 - Playback URLs are resolved by a short-lived Vercel function and returned with an HTTP redirect. Full audio is not proxied through Vercel.
-
-## Vercel Environment Variables
-
-Set these in Vercel Project Settings:
-
-```
-APPLE_MUSIC_DEVELOPER_TOKEN=<Apple Music developer token>
-APPLE_MUSIC_STOREFRONT=us
-```
-
-`APPLE_MUSIC_STOREFRONT` is optional and defaults to `us`.
-
-If the Apple Music token is not configured yet, the demo automatically falls back to Deezer artwork so development can continue.
 
 ## Local Vercel Development
 
@@ -40,7 +27,7 @@ This runs the site through `vercel dev`, including the same `/api/*` functions u
 - `GET /api/search?q=...&limit=12`
 - `GET /api/search?q=...&source=netease`
 - `GET /api/stream?source=netease&id=...&br=320`
-- `GET /api/artwork?title=...&artist=...&album=...&size=1000`
+- `GET /api/artwork?source=netease&id=...&size=1000`
 - `GET /api/lyrics?source=netease&id=...`
 
 ## Deployment
