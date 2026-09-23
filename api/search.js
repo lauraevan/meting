@@ -4,7 +4,7 @@ import {
   mergeDeezerWithSources,
   searchDeezer,
   searchMetingProvider
-} from './_lib.js';
+} from '../server/music.js';
 
 export default async function handler(req, res) {
   const query = String(req.query.q || '').trim();
