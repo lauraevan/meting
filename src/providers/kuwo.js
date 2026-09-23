@@ -28,7 +28,7 @@ export default class KuwoProvider extends BaseProvider {
   search(keyword, option = {}) {
     return {
       method: 'GET',
-      url: 'http://www.kuwo.cn/api/www/search/searchMusicBykeyWord',
+      url: 'https://www.kuwo.cn/api/www/search/searchMusicBykeyWord',
       body: {
         key: keyword,
         pn: option.page || 1,
@@ -111,7 +111,7 @@ export default class KuwoProvider extends BaseProvider {
   url(id, br = 320) {
     return {
       method: 'GET',
-      url: 'http://www.kuwo.cn/api/v1/www/music/playUrl',
+      url: 'https://www.kuwo.cn/api/v1/www/music/playUrl',
       body: {
         mid: id,
         type: 'music',
