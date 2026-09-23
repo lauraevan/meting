@@ -1,17 +1,17 @@
 /**
- * Vercel Serverless Function：以 HTTP 接口暴露 Meting API
+ * Vercel Serverless Function: exposes the Meting API over HTTP
  *
- * GET /api?server=netease&type=search&id=关键词
+ * GET /api?server=netease&type=search&id=keyword
  *
- * 参数：
- *   server  平台：netease / tencent / kugou / baidu / kuwo（默认 netease）
+ * Parameters:
+ *   server  Platform: netease / tencent / kugou / baidu / kuwo (default netease)
  *   type    search / song / album / artist / playlist / url / lyric / pic
- *   id      关键词（search）或资源 ID
- *   page    search 页码（默认 1）
- *   limit   search 每页数量（默认 30）/ artist 数量（默认 50）
- *   br      url 码率 kbps（默认 320）
- *   size    pic 尺寸（默认 300）
- *   format  是否标准化数据，传 0 / false 关闭（默认开启）
+ *   id      Keyword (search) or resource ID
+ *   page    Search page number (default 1)
+ *   limit   Search results per page (default 30) / artist item count (default 50)
+ *   br      Bitrate in kbps for url (default 320)
+ *   size    Image size for pic (default 300)
+ *   format  Normalize data; pass 0 / false to disable (enabled by default)
  */
 
 import Meting from '../src/meting.js';
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       return send(res, 502, { error: meting.error, message: meting.status });
     }
 
-    // 播放链接具有时效性，不做缓存；其余数据缓存 10 分钟
+    // Playback URLs expire, so never cache them; cache everything else for 10 minutes
     const cache = type === 'url' ? 'no-store' : 's-maxage=600, stale-while-revalidate=3600';
     return send(res, 200, result, cache);
   } catch (err) {
