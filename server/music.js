@@ -284,25 +284,3 @@ export const resolveArtwork = async (source, id, size = 900) => {
 
   return parsed;
 };
-export const resolveArtwork = async (source, id, size = 900) => {
-  if (!PLAYBACK_PROVIDERS.includes(source)) {
-    throw new Error('Unsupported artwork provider');
-  }
-
-  if (!id) {
-    throw new Error('Missing artwork ID');
-  }
-
-  const meting = new Meting(source);
-  meting.format(true);
-
-  const requested = clamp(size, 64, 2000, 900);
-  const raw = await meting.pic(id, requested);
-  const parsed = safeParse(raw, {});
-
-  if (!parsed?.url) {
-    throw new Error('No artwork URL returned by provider');
-  }
-
-  return parsed;
-};

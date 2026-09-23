@@ -71,45 +71,19 @@
         </form>
 
         <div class="top-actions">
-          <div class="speed-pill">
-            <span class="pulse-dot"></span>
-            <span id="speedText">Ready</span>
-          </div>
+          <div class="speed-pill" role="status"><span class="pulse-dot"></span><span id="speedText">Ready</span></div>
           <button class="profile-button" title="Meting">M</button>
         </div>
       </header>
 
       <section class="content" id="content">
-        <section class="featured" id="featured">
-          <div class="featured-backdrop placeholder" id="featuredBackdrop"></div>
-          <div class="featured-shade"></div>
-          <div class="featured-copy">
-            <div class="eyebrow">READY TO PLAY</div>
-            <div class="featured-kicker" id="featuredKicker">Your multi-source library</div>
-            <h1 id="featuredTitle">Everything you want to hear.</h1>
-            <p id="featuredArtist">Search once. Meting finds the best matching source and gets out of your way.</p>
-            <div class="featured-actions">
-              <button class="hero-play" id="featuredPlayButton"><span>▶</span> Play</button>
-              <button class="hero-secondary" data-focus-search>Find music</button>
-            </div>
-            <div class="featured-status">
-              <span><i></i> Deezer metadata</span>
-              <span><i></i> Multi-source playback</span>
-              <span><i></i> Meting artwork</span>
-            </div>
-          </div>
-          <div class="featured-art-shell">
-            <div class="featured-art placeholder" id="featuredArt"></div>
-          </div>
-        </section>
-
-        <section class="section-block">
+        <section class="section-block quick-section">
           <div class="section-title-row">
             <div>
-              <h2>Jump back in</h2>
-              <p>Quick searches built for the demo</p>
+              <h2>Listen now</h2>
+              <p>Pick an artist or search the catalog</p>
             </div>
-            <button class="text-button" id="surpriseButton">Shuffle picks</button>
+            <button class="text-button" id="surpriseButton">Surprise me ↗</button>
           </div>
           <div class="quick-grid" id="quickGrid"></div>
         </section>
@@ -117,8 +91,8 @@
         <section class="section-block results-section" id="resultsSection">
           <div class="section-title-row">
             <div>
-              <h2 id="resultsTitle">Popular right now</h2>
-              <p id="resultsSubtitle">Pulled through the live Meting stack</p>
+              <h2 id="resultsTitle">Tracks</h2>
+              <p id="resultsSubtitle">Search for something to play</p>
             </div>
             <div class="result-meta" id="resultMeta"></div>
           </div>

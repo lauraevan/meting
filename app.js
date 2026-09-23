@@ -9,10 +9,10 @@ const providerMeta = {
 };
 
 const quickSearches = [
-  { title: 'Late Night', query: 'The Weeknd', copy: 'Dark pop, R&B and after-hours energy.' },
-  { title: 'Focus', query: 'Hans Zimmer', copy: 'Cinematic instrumentals and deep focus.' },
-  { title: 'Rap Now', query: 'Kendrick Lamar', copy: 'Heavy rotation from modern hip-hop.' },
-  { title: 'Global', query: 'NewJeans', copy: 'Fast-moving pop across international catalogs.' }
+  { title: 'The Weeknd', query: 'The Weeknd', copy: 'After Hours · Starboy' },
+  { title: 'Hans Zimmer', query: 'Hans Zimmer', copy: 'Interstellar · Dune' },
+  { title: 'Kendrick Lamar', query: 'Kendrick Lamar', copy: 'GNX · DAMN.' },
+  { title: 'NewJeans', query: 'NewJeans', copy: 'Get Up · New Jeans' }
 ];
 
 const state = {
@@ -27,7 +27,9 @@ const state = {
   playing: false,
   latencies: {},
   failedSources: new Set(),
-  likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]')
+  likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
+  searchRequest: 0,
+  playbackRequest: 0
 };
 
 const audio = $('#audio');
@@ -137,16 +139,6 @@ const saveLiked = () => {
   localStorage.setItem('meting:liked', JSON.stringify(state.likedTracks));
 };
 
-const updateFeatured = track => {
-  if (!track) return;
-
-  $('#featuredKicker').textContent = track.album || 'Featured from your search';
-  $('#featuredTitle').textContent = track.name;
-  $('#featuredArtist').textContent = track.artist.join(', ');
-  setArtwork($('#featuredArt'), track, 900);
-  setArtwork($('#featuredBackdrop'), track, 1200);
-};
-
 const renderQueue = () => {
   $('#queueCount').textContent = state.queue.length;
   $('#queueMeta').textContent = state.queue.length
@@ -169,11 +161,11 @@ const renderQueue = () => {
     </button>
   `).join('');
 
-  $('[data-queue-art]').forEach(el => {
+  $$('[data-queue-art]').forEach(el => {
     setArtwork(el, state.queue[Number(el.dataset.queueArt)], 120);
   });
 
-  $('[data-queue-index]').forEach(button => {
+  $$('[data-queue-index]').forEach(button => {
     button.addEventListener('click', () => {
       const track = state.queue[Number(button.dataset.queueIndex)];
       const index = state.tracks.findIndex(item => item.id === track?.id);
@@ -186,7 +178,7 @@ const renderQueue = () => {
 
 const showHome = () => {
   $('#content').scrollTo({ top: 0, behavior: 'smooth' });
-  $('.nav-item').forEach(item => item.classList.remove('active'));
+  $$('.nav-item').forEach(item => item.classList.remove('active'));
   $('[data-home].nav-item')?.classList.add('active');
 };
 
@@ -282,7 +274,6 @@ const renderTracks = () => {
 
   tracksEl.innerHTML = state.tracks.map((track, index) => {
     const active = state.current?.id === track.id ? 'active' : '';
-    const metaTag = track.metadataSource === 'deezer' ? 'Deezer meta' : 'Fallback';
     return `
       <div class="track-row ${active}" data-index="${index}">
         <div class="track-num">${String(index + 1).padStart(2, '0')}</div>
@@ -292,7 +283,7 @@ const renderTracks = () => {
           <span>${escapeHtml(track.artist.join(', '))}</span>
         </div>
         <div class="track-album">${escapeHtml(track.album || 'Single')}</div>
-        <div class="provider-chip">${escapeHtml(providerName(track.source))} · ${metaTag}</div>
+        <div class="provider-chip">${escapeHtml(providerName(track.source))}</div>
         <button class="track-action" data-play="${index}" aria-label="Play">▶</button>
       </div>
     `;
@@ -444,16 +435,17 @@ const search = async query => {
   if (state.sourceFilter !== 'all') params.set('source', state.sourceFilter);
 
   const started = performance.now();
+  const request = ++state.searchRequest;
 
   try {
     const response = await fetch(`/api/search?${params}`);
     const data = await response.json();
 
+    if (request !== state.searchRequest) return;
     if (!response.ok) throw new Error(data.error || 'Search failed');
 
     state.tracks = data.tracks || [];
-    if (state.tracks[0]) updateFeatured(state.tracks[0]);
-    resultsSubtitle.textContent = 'Matched across Deezer metadata and live playback sources';
+    resultsSubtitle.textContent = 'From available music sources';
     for (const provider of data.providers || []) {
       state.latencies[provider.provider] = provider.elapsedMs;
     }
@@ -461,15 +453,15 @@ const search = async query => {
     const clientElapsed = Math.round(performance.now() - started);
     speedText.textContent = `${data.elapsedMs ?? clientElapsed}ms API`;
     const sourceCount = (data.providers || []).filter(item => item.ok).length;
-    const deezerStatus = data.metadata?.ok ? `Deezer ${data.metadata.elapsedMs}ms` : 'Deezer fallback';
-    resultMeta.textContent = `${state.tracks.length} tracks · ${deezerStatus} · ${sourceCount} playback sources`;
+    resultMeta.textContent = `${state.tracks.length} tracks · ${sourceCount} sources`;
 
     renderSources();
     renderTracks();
     $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
+    if (request !== state.searchRequest) return;
     state.tracks = [];
-    tracksEl.innerHTML = '<div class="empty-row">The demo API could not complete this search.</div>';
+    tracksEl.innerHTML = '<div class="empty-row">Search is unavailable right now. Try again in a moment.</div>';
     resultMeta.textContent = '';
     speedText.textContent = 'Search failed';
     toast(error.message || 'Search failed');
@@ -546,15 +538,11 @@ $('#surpriseButton').addEventListener('click', () => {
 });
 
 
-$('#featuredPlayButton').addEventListener('click', () => {
-  if (state.tracks.length) playIndex(0);
-});
-
-$('[data-home]').forEach(button => {
+$$('[data-home]').forEach(button => {
   button.addEventListener('click', showHome);
 });
 
-$('[data-library]').forEach(button => {
+$$('[data-library]').forEach(button => {
   button.addEventListener('click', showLibrary);
 });
 
@@ -625,7 +613,7 @@ const bootstrap = async () => {
   try {
     const response = await fetch('/api/health');
     const data = await response.json();
-    $('#apiStatus').textContent = data.ok
+    $('#apiStatus').textContent = response.ok && data.ok
       ? 'Deezer meta · Meting art'
       : 'Unavailable';
   } catch {
