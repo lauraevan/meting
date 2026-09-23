@@ -3,40 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0a0a0b" />
-  <title>Meting — Desktop Music Demo</title>
+  <meta name="theme-color" content="#080808" />
+  <title>Meting</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-        <div>
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="brand-copy">
           <strong>Meting</strong>
-          <small>labs</small>
+          <small>music</small>
         </div>
       </div>
 
       <nav class="nav">
-        <button class="nav-item active" data-view="home">
-          <span class="nav-icon">⌂</span>
-          <span>Home</span>
+        <button class="nav-item active" data-home>
+          <span class="nav-icon">⌂</span><span>Home</span>
         </button>
         <button class="nav-item" data-focus-search>
-          <span class="nav-icon">⌕</span>
-          <span>Search</span>
+          <span class="nav-icon">⌕</span><span>Search</span>
         </button>
-        <button class="nav-item" data-view="library">
-          <span class="nav-icon">▣</span>
-          <span>Your Library</span>
+        <button class="nav-item" data-library>
+          <span class="nav-icon">▣</span><span>Your Library</span>
         </button>
       </nav>
 
+      <div class="library-shortcuts">
+        <div class="section-heading">Your music</div>
+        <button class="library-item" data-library>
+          <span class="library-icon liked-icon">♥</span>
+          <span><strong>Liked Songs</strong><small>Local collection</small></span>
+        </button>
+        <button class="library-item" data-home>
+          <span class="library-icon recent-icon">↺</span>
+          <span><strong>Recently played</strong><small>Current session</small></span>
+        </button>
+      </div>
+
       <div class="sidebar-section">
-        <div class="section-heading">Sources</div>
+        <div class="section-heading">Playback sources</div>
         <div class="source-list" id="sourceList"></div>
       </div>
 
@@ -44,7 +51,7 @@
         <div class="api-badge">
           <span class="status-dot"></span>
           <div>
-            <strong>Demo API</strong>
+            <strong>Meting API</strong>
             <small id="apiStatus">Connecting…</small>
           </div>
         </div>
@@ -54,14 +61,13 @@
     <main class="main">
       <header class="topbar">
         <div class="history-actions">
-          <button class="icon-button" title="Back">‹</button>
-          <button class="icon-button" title="Forward">›</button>
+          <button class="icon-button" data-home title="Home">⌂</button>
         </div>
 
         <form class="search" id="searchForm">
           <span class="search-icon">⌕</span>
-          <input id="searchInput" autocomplete="off" placeholder="Search any song, artist, album…" />
-          <kbd>⌘ K</kbd>
+          <input id="searchInput" autocomplete="off" placeholder="What do you want to play?" />
+          <kbd>⌘K</kbd>
         </form>
 
         <div class="top-actions">
@@ -69,36 +75,41 @@
             <span class="pulse-dot"></span>
             <span id="speedText">Ready</span>
           </div>
-          <button class="profile-button" title="Profile">M</button>
+          <button class="profile-button" title="Meting">M</button>
         </div>
       </header>
 
-      <section class="content">
-        <div class="hero" id="hero">
-          <div class="hero-noise"></div>
-          <div class="hero-content">
-            <div class="eyebrow">MULTI-SOURCE MUSIC ENGINE</div>
-            <h1>One search.<br /><span>Every source.</span></h1>
-            <p>Search multiple music providers at once, then stream only when you press play.</p>
-            <div class="hero-actions">
-              <button class="primary-button" data-focus-search>Start searching</button>
-              <button class="secondary-button" id="surpriseButton">Surprise me</button>
+      <section class="content" id="content">
+        <section class="featured" id="featured">
+          <div class="featured-backdrop placeholder" id="featuredBackdrop"></div>
+          <div class="featured-shade"></div>
+          <div class="featured-copy">
+            <div class="eyebrow">READY TO PLAY</div>
+            <div class="featured-kicker" id="featuredKicker">Your multi-source library</div>
+            <h1 id="featuredTitle">Everything you want to hear.</h1>
+            <p id="featuredArtist">Search once. Meting finds the best matching source and gets out of your way.</p>
+            <div class="featured-actions">
+              <button class="hero-play" id="featuredPlayButton"><span>▶</span> Play</button>
+              <button class="hero-secondary" data-focus-search>Find music</button>
+            </div>
+            <div class="featured-status">
+              <span><i></i> Deezer metadata</span>
+              <span><i></i> Multi-source playback</span>
+              <span><i></i> Meting artwork</span>
             </div>
           </div>
-          <div class="hero-orbit" aria-hidden="true">
-            <div class="orbit-card orbit-a"><span>NE</span></div>
-            <div class="orbit-card orbit-b"><span>QQ</span></div>
-            <div class="orbit-card orbit-c"><span>KG</span></div>
-            <div class="orbit-card orbit-d"><span>KW</span></div>
+          <div class="featured-art-shell">
+            <div class="featured-art placeholder" id="featuredArt"></div>
           </div>
-        </div>
+        </section>
 
         <section class="section-block">
           <div class="section-title-row">
             <div>
-              <div class="eyebrow">FAST START</div>
-              <h2>Pick a lane</h2>
+              <h2>Jump back in</h2>
+              <p>Quick searches built for the demo</p>
             </div>
+            <button class="text-button" id="surpriseButton">Shuffle picks</button>
           </div>
           <div class="quick-grid" id="quickGrid"></div>
         </section>
@@ -106,8 +117,8 @@
         <section class="section-block results-section" id="resultsSection">
           <div class="section-title-row">
             <div>
-              <div class="eyebrow">DISCOVERY</div>
-              <h2 id="resultsTitle">Recently searched</h2>
+              <h2 id="resultsTitle">Popular right now</h2>
+              <p id="resultsSubtitle">Pulled through the live Meting stack</p>
             </div>
             <div class="result-meta" id="resultMeta"></div>
           </div>
@@ -119,7 +130,7 @@
     <aside class="now-panel">
       <div class="now-panel-head">
         <span>Now playing</span>
-        <button class="icon-button">•••</button>
+        <button class="icon-button" id="collapseNow" title="Now playing">•••</button>
       </div>
 
       <div class="now-art-wrap">
@@ -128,16 +139,16 @@
 
       <div class="now-copy">
         <div class="now-title" id="nowTitle">Nothing playing</div>
-        <div class="now-artist" id="nowArtist">Choose a track to start</div>
+        <div class="now-artist" id="nowArtist">Choose something from the list</div>
       </div>
 
       <div class="now-card">
-        <div class="now-card-title">Source</div>
+        <div class="now-card-title">Playback</div>
         <div class="source-detail">
           <span class="source-icon" id="nowSourceIcon">M</span>
           <div>
             <strong id="nowSource">Waiting</strong>
-            <small id="nowQuality">320 kbps target</small>
+            <small id="nowQuality">Automatic source selection</small>
           </div>
         </div>
       </div>
@@ -156,7 +167,7 @@
         <div class="mini-art placeholder" id="miniArt"></div>
         <div class="mini-copy">
           <strong id="miniTitle">Select a track</strong>
-          <span id="miniArtist">Meting demo</span>
+          <span id="miniArtist">Meting</span>
         </div>
         <button class="heart-button" id="heartButton" aria-label="Favorite">♡</button>
       </div>
@@ -183,6 +194,14 @@
       </div>
       <audio id="audio" preload="metadata"></audio>
     </footer>
+  </div>
+
+  <div class="queue-popover" id="queuePopover" aria-hidden="true">
+    <div class="queue-head">
+      <div><strong>Up next</strong><small id="queueMeta">Nothing queued</small></div>
+      <button class="icon-button" id="closeQueue">×</button>
+    </div>
+    <div class="queue-list" id="queueList"></div>
   </div>
 
   <div class="toast" id="toast"></div>
