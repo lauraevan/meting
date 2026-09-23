@@ -213,7 +213,8 @@ export default class KugouProvider extends BaseProvider {
       name: data.songName || filename,
       artist: [],
       album: data.album_name || '',
-      url_id: data.encode_album_audio_id || data.hash,
+      // The legacy privilege endpoint expects the song hash, not album_audio_id.
+      url_id: data.hash,
       pic_id: data.hash,
       lyric_id: data.hash,
       source: 'kugou'

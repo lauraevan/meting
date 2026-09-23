@@ -5,8 +5,7 @@ const providerMeta = {
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
   kugou: { name: 'KuGou', short: 'KG' },
-  kuwo: { name: 'Kuwo', short: 'KW' },
-  deezer: { name: 'Deezer preview', short: 'DZ' }
+  kuwo: { name: 'Kuwo', short: 'KW' }
 };
 
 const quickSearches = [
@@ -29,6 +28,7 @@ const state = {
   shuffle: false,
   playing: false,
   latencies: {},
+  providerHealth: {},
   failedSources: new Set(),
   likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
   searchRequest: 0,
@@ -95,7 +95,6 @@ const orderedSources = track =>
     .sort((a, b) => (state.latencies[a] ?? 99999) - (state.latencies[b] ?? 99999));
 
 const streamUrl = (track, source = track.source) => {
-  if (source === 'deezer') return track.preview;
   const data = sourceData(track, source);
   return `/api/stream?source=${encodeURIComponent(source)}&id=${encodeURIComponent(data.url_id || data.id || '')}&br=320`;
 };
@@ -108,9 +107,9 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = [track.source, ...orderedSources(track)]
+  const candidates = ['netease', 'tencent', 'kugou', 'kuwo']
     .filter((source, index, list) => source && list.indexOf(source) === index)
-    .filter(source => sourceData(track, source)?.pic_id);
+    .filter(source => track.sources?.[source]?.pic_id);
 
   const trySource = index => {
     const source = candidates[index];
@@ -224,11 +223,11 @@ const renderSources = () => {
   sourceList.innerHTML = providers.map(source => {
     const active = state.sourceFilter === source ? 'active' : '';
     const label = source === 'all' ? 'All sources' : providerMeta[source].name;
-    const latency = source === 'all'
-      ? ''
-      : state.latencies[source] != null
-        ? `${state.latencies[source]}ms`
-        : '—';
+    const health = state.providerHealth[source];
+    const latency = source === 'all' ? ''
+      : health && !health.ok ? 'Unavailable'
+      : health && !health.count ? 'No results'
+      : state.latencies[source] != null ? `${state.latencies[source]}ms` : '—';
 
     return `
       <button class="source-row ${active}" data-source="${source}">
@@ -339,9 +338,7 @@ const updatePlayerUI = () => {
   $('#nowArtist').textContent = track.artist.join(', ');
   $('#nowSource').textContent = providerName(track.source);
   $('#nowSourceIcon').textContent = providerShort(track.source);
-  $('#nowQuality').textContent = track.source === 'deezer'
-    ? '30-second preview'
-    : 'Automatic source selection';
+  $('#nowQuality').textContent = 'Automatic source selection';
   $('#heartButton').classList.toggle('active', isLiked(track));
   $('#heartButton').textContent = isLiked(track) ? '♥' : '♡';
 
@@ -400,20 +397,14 @@ const tryNextSource = async (request = state.playbackRequest) => {
   const nextSource = orderedSources(track).find(source => !state.failedSources.has(source));
 
   if (!nextSource) {
-    if (track.preview && !state.failedSources.has('deezer')) {
-      track.source = 'deezer';
-      toast('Full track unavailable. Playing a 30-second preview.');
-    } else {
-      state.playing = false;
-      speedText.textContent = 'No playable source';
-      updatePlayerUI();
-      toast('This track is unavailable from the current sources.');
-      return;
-    }
-  } else {
-    track.source = nextSource;
+    state.playing = false;
+    speedText.textContent = 'No playable source';
+    updatePlayerUI();
+    toast('This track is unavailable from the current sources.');
+    return;
   }
 
+  track.source = nextSource;
   state.playbackRequest += 1;
   updatePlayerUI();
   await startCurrentSource(state.playbackRequest);
@@ -485,6 +476,7 @@ const search = async (query, { scroll = true } = {}) => {
     resultsSubtitle.textContent = 'From available music sources';
     for (const provider of data.providers || []) {
       state.latencies[provider.provider] = provider.elapsedMs;
+      state.providerHealth[provider.provider] = provider;
     }
 
     const clientElapsed = Math.round(performance.now() - started);

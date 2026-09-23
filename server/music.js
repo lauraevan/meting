@@ -103,12 +103,14 @@ export const searchMetingProvider = async (provider, query, limit) => {
 
   const parsed = safeParse(raw, []);
   const sourceTracks = Array.isArray(parsed) ? parsed : [];
+  const payload = safeParse(meting.raw, {});
+  const rejected = meting.error || (meting.info?.statusCode >= 400) || payload?.success === false;
 
   return {
     provider,
-    ok: true,
+    ok: !rejected,
     elapsedMs: Math.round(performance.now() - started),
-    tracks: sourceTracks
+    tracks: rejected ? [] : sourceTracks
       .map(track => normalizeMetingTrack(track, provider))
       .filter(track => track && track.id)
   };
@@ -156,7 +158,6 @@ export const searchDeezer = async (query, limit) => {
       rank: Number(track.rank || 0),
       metadataSource: 'deezer',
       deezerUrl: track.link || '',
-      preview: track.preview || '',
     }))
   };
 };
