@@ -1,4 +1,4 @@
-import { PLAYBACK_PROVIDERS } from './_lib.js';
+import { PLAYBACK_PROVIDERS } from '../server/music.js';
 
 export default function handler(req, res) {
   res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
