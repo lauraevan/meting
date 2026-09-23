@@ -1,33 +1,23 @@
-import { findAppleArtwork } from '../server/music.js';
+import { PLAYBACK_PROVIDERS, resolveArtwork } from '../server/music.js';
 
 export default async function handler(req, res) {
-  const title = String(req.query.title || '').trim();
-  const artist = String(req.query.artist || '').trim();
-  const album = String(req.query.album || '').trim();
+  const source = String(req.query.source || '');
+  const id = String(req.query.id || '');
   const size = Number(req.query.size || 900);
 
-  if (!title || !artist) {
-    return res.status(400).json({ error: 'Missing title or artist' });
+  if (!PLAYBACK_PROVIDERS.includes(source) || !id) {
+    return res.status(400).json({ error: 'Invalid source or artwork ID' });
   }
 
   try {
-    const artwork = await findAppleArtwork({ title, artist, album, size });
-    const upstream = await fetch(artwork.url);
-
-    if (!upstream.ok) {
-      throw new Error(`Apple artwork fetch failed with ${upstream.status}`);
-    }
-
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/jpeg');
+    const artwork = await resolveArtwork(source, id, size);
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
-    res.setHeader('X-Meting-Artwork-Source', 'apple-music');
-    return res.status(200).send(buffer);
+    res.setHeader('X-Meting-Artwork-Source', source);
+    return res.redirect(307, artwork.url);
   } catch (error) {
-    const status = error.code === 'APPLE_TOKEN_MISSING' ? 503 : 404;
-    return res.status(status).json({
+    return res.status(404).json({
       error: error.message || 'Artwork unavailable',
-      source: 'apple-music'
+      source
     });
   }
 }
