@@ -199,7 +199,7 @@ const showLibrary = () => {
 };
 
 const renderSources = () => {
-  const providers = ['all', ...Object.keys(providerMeta)];
+  const providers = ['all', 'netease', 'tencent', 'kugou', 'kuwo'];
   sourceList.innerHTML = providers.map(source => {
     const active = state.sourceFilter === source ? 'active' : '';
     const label = source === 'all' ? 'All sources' : providerMeta[source].name;
@@ -466,7 +466,7 @@ const search = async (query, { scroll = true } = {}) => {
 
     const clientElapsed = Math.round(performance.now() - started);
     speedText.textContent = `${data.elapsedMs ?? clientElapsed}ms API`;
-    const sourceCount = (data.providers || []).filter(item => item.ok).length;
+    const sourceCount = (data.providers || []).filter(item => item.ok && item.count > 0).length;
     resultMeta.textContent = `${state.tracks.length} tracks · ${sourceCount} sources`;
 
     renderSources();
