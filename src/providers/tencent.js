@@ -1,7 +1,7 @@
 import BaseProvider from './base.js';
 
 /**
- * 腾讯音乐平台提供者
+ * Tencent Music provider
  */
 export default class TencentProvider extends BaseProvider {
   constructor(meting) {
@@ -10,7 +10,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取腾讯音乐的请求头配置
+   * Get Tencent Music request headers
    */
   getHeaders() {
     return {
@@ -25,7 +25,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 搜索歌曲
+   * Search for songs
    */
   search(keyword, option = {}) {
     return {
@@ -46,7 +46,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌曲详情
+   * Get song details
    */
   song(id) {
     return {
@@ -62,7 +62,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取专辑信息
+   * Get album information
    */
   album(id) {
     return {
@@ -79,7 +79,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取艺术家作品
+   * Get artist works
    */
   artist(id, limit = 50) {
     return {
@@ -98,7 +98,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取播放列表
+   * Get playlist
    */
   playlist(id) {
     return {
@@ -115,7 +115,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取音频播放链接
+   * Get audio playback URL
    */
   url(id, br = 320) {
     return {
@@ -131,7 +131,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌词
+   * Get lyrics
    */
   lyric(id) {
     return {
@@ -146,7 +146,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 获取封面图片
+   * Get cover artwork
    */
   async pic(id, size = 300) {
     const url = `https://y.gtimg.cn/music/photo_new/T002R${size}x${size}M000${id}.jpg?max_age=2592000`;
@@ -154,7 +154,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 格式化腾讯音乐数据
+   * Format Tencent Music data
    */
   format(data) {
     if (data.musicData) {
@@ -180,7 +180,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 处理腾讯音乐的解码逻辑
+   * Handle Tencent Music decoding
    */
   async handleDecode(decodeType, data) {
     if (decodeType === 'tencent_url') {
@@ -192,7 +192,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 腾讯音乐 URL 解码
+   * Tencent Music URL decoding
    */
   async urlDecode(result) {
     const data = JSON.parse(result);
@@ -277,12 +277,12 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 解码HTML实体编码
+   * Decode HTML entities
    */
   decodeHtmlEntities(text) {
     if (!text) return text;
 
-    // 常见HTML实体编码映射
+    // Common HTML entity mapping
     const entityMap = {
       '&apos;': "'",
       '&quot;': '"',
@@ -292,18 +292,18 @@ export default class TencentProvider extends BaseProvider {
       '&nbsp;': ' '
     };
 
-    // 替换命名实体
+    // Replace named entities
     let decoded = text;
     for (const [entity, char] of Object.entries(entityMap)) {
       decoded = decoded.replace(new RegExp(entity, 'g'), char);
     }
 
-    // 替换数字实体（如 &#39; &#34; 等）
+    // Replace numeric entities (for example &#39; and &#34;)
     decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
       return String.fromCharCode(parseInt(dec, 10));
     });
 
-    // 替换十六进制实体（如 &#x27; 等）
+    // Replace hexadecimal entities (for example &#x27;)
     decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
       return String.fromCharCode(parseInt(hex, 16));
     });
@@ -312,7 +312,7 @@ export default class TencentProvider extends BaseProvider {
   }
 
   /**
-   * 腾讯音乐歌词解码
+   * Tencent Music lyrics decoding
    */
   lyricDecode(result) {
     const jsonStr = result.substring(18, result.length - 1);
