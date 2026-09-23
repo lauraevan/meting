@@ -1,5 +1,5 @@
 /**
- * Meting music framework - Node.js version (重构版本)
+ * Meting music framework - Node.js version (refactored version)
  * https://i-meto.com
  * https://github.com/metowolf/Meting
  *
@@ -12,7 +12,7 @@ import ProviderFactory from './providers/index.js';
 
 class Meting {
   constructor(server = 'netease') {
-    this.VERSION = '__VERSION__'; // 在构建时由 rollup 替换为实际版本号
+    this.VERSION = '__VERSION__'; // Replaced by Rollup with the actual version at build time
     this.raw = null;
     this.info = null;
     this.error = null;
@@ -27,10 +27,10 @@ class Meting {
     this.site(server);
   }
 
-  // 设置音乐平台
+  // Set music platform
   site(server) {
     if (!ProviderFactory.isSupported(server)) {
-      server = 'netease'; // 默认使用网易云音乐
+      server = 'netease'; // Default to NetEase Cloud Music
     }
 
     this.server = server;
@@ -40,32 +40,32 @@ class Meting {
     return this;
   }
 
-  // 设置 Cookie
+  // Set Cookie
   cookie(cookie) {
     this.header['Cookie'] = cookie;
     return this;
   }
 
-  // 设置数据格式化
+  // Configure data formatting
   format(format = true) {
     this.isFormat = format;
     return this;
   }
 
-  // 执行 API 请求的主方法
+  // Main API request execution method
   async _exec(api) {
-    // 让 Provider 自己处理完整的请求流程
+    // Let the Provider handle the complete request flow
     return await this.provider.executeRequest(api, this);
   }
 
-  // HTTP 请求方法 - 使用 fetch API
+  // HTTP request method - uses the Fetch API
   async _curl(url, payload = null, headerOnly = false) {
     const requestOptions = {
       method: payload ? 'POST' : 'GET',
       headers: { ...this.header }
     };
 
-    // 处理请求体
+    // Process request body
     if (payload) {
       if (typeof payload === 'object' && !Buffer.isBuffer(payload) && typeof payload !== 'string') {
         payload = new URLSearchParams(payload).toString();
@@ -74,7 +74,7 @@ class Meting {
       requestOptions.body = payload;
     }
 
-    // 添加超时控制
+    // Add timeout handling
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
     requestOptions.signal = controller.signal;
@@ -86,13 +86,13 @@ class Meting {
         
         clearTimeout(timeoutId);
         
-        // 存储响应信息
+        // Store response information
         this.info = {
           statusCode: response.status,
           headers: Object.fromEntries(response.headers.entries())
         };
 
-        // 获取响应数据
+        // Read response data
         const data = await response.text();
         this.raw = data;
         this.error = null;
@@ -102,7 +102,7 @@ class Meting {
       } catch (err) {
         clearTimeout(timeoutId);
         
-        // 处理错误
+        // Handle errors
         if (err.name === 'AbortError') {
           this.error = 'TIMEOUT';
           this.status = 'Request timeout';
@@ -111,7 +111,7 @@ class Meting {
           this.status = err.message;
         }
         
-        // 重试机制
+        // Retry mechanism
         if (retries > 0) {
           retries--;
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -126,64 +126,64 @@ class Meting {
   }
 
 
-  // ========== 公共 API 方法 ==========
+  // ========== Public API methods ==========
 
-  // 搜索功能
+  // Search
   async search(keyword, option = {}) {
     const api = this.provider.search(keyword, option);
     return await this._exec(api);
   }
 
-  // 获取歌曲详情
+  // Get song details
   async song(id) {
     const api = this.provider.song(id);
     return await this._exec(api);
   }
 
-  // 获取专辑信息
+  // Get album information
   async album(id) {
     const api = this.provider.album(id);
     return await this._exec(api);
   }
 
-  // 获取艺术家作品
+  // Get artist works
   async artist(id, limit = 50) {
     const api = this.provider.artist(id, limit);
     return await this._exec(api);
   }
 
-  // 获取播放列表
+  // Get playlist
   async playlist(id) {
     const api = this.provider.playlist(id);
     return await this._exec(api);
   }
 
-  // 获取音频播放链接
+  // Get audio playback URL
   async url(id, br = 320) {
     this.temp.br = br;
     const api = this.provider.url(id, br);
     return await this._exec(api);
   }
 
-  // 获取歌词
+  // Get lyrics
   async lyric(id) {
     const api = this.provider.lyric(id);
     return await this._exec(api);
   }
 
-  // 获取封面图片
+  // Get cover artwork
   async pic(id, size = 300) {
     return await this.provider.pic(id, size);
   }
 
-  // ========== 静态方法 ==========
+  // ========== Static methods ==========
 
-  // 获取支持的平台列表
+  // Get supported platforms
   static getSupportedPlatforms() {
     return ProviderFactory.getSupportedPlatforms();
   }
 
-  // 检查平台是否支持
+  // Check whether a platform is supported
   static isSupported(platform) {
     return ProviderFactory.isSupported(platform);
   }
