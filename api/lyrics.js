@@ -1,4 +1,4 @@
-import { getLyrics, PLAYBACK_PROVIDERS } from './_lib.js';
+import { getLyrics, PLAYBACK_PROVIDERS } from '../server/music.js';
 
 export default async function handler(req, res) {
   const source = String(req.query.source || '');
