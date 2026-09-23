@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     if (!upstream.ok || !upstream.headers.get('content-type')?.startsWith('image/'))
       throw new Error('Artwork unavailable');
     res.setHeader('Content-Type', upstream.headers.get('content-type'));
-    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800');
     return res.status(200).send(Buffer.from(await upstream.arrayBuffer()));
   } catch {
     return res.status(404).json({ error: 'Artwork unavailable' });

@@ -1,6 +1,12 @@
 import { Readable } from 'node:stream';
 import { qijieyaUrl, validQijieyaId } from '../server/qijieya.js';
 
+// A seek makes a new Range request. Reuse the recently resolved media URL
+// instead of asking Meting to resolve the same track on every seek.
+const resolved = new Map();
+const mediaResponse = response => response.ok && response.body
+  && response.headers.get('content-type')?.startsWith('audio/');
+
 export default async function handler(req, res) {
   const id = String(req.query.id || '');
   if (!validQijieyaId(id) || req.query.source) {
@@ -11,18 +17,37 @@ export default async function handler(req, res) {
   res.on('close', () => abort.abort());
   const timer = setTimeout(() => abort.abort(), 18000);
   let upstream;
+  const key = `${id}:${br}`;
+  const headers = { ...(req.headers.range ? { Range: req.headers.range } : {}) };
   try {
-    upstream = await fetch(qijieyaUrl('url', id, { br }), {
-      headers: { ...(req.headers.range ? { Range: req.headers.range } : {}) },
-      signal: abort.signal
-    });
+    const cached = resolved.get(key);
+    if (cached && cached.expires > Date.now()) {
+      try {
+        upstream = await fetch(cached.url, { headers, signal: abort.signal });
+        if (!mediaResponse(upstream)) {
+          await upstream.body?.cancel().catch(() => {});
+          upstream = null;
+          resolved.delete(key);
+        }
+      } catch {
+        if (abort.signal.aborted) throw new Error('Request cancelled');
+        resolved.delete(key);
+      }
+    }
+    if (!upstream) {
+      upstream = await fetch(qijieyaUrl('url', id, { br }), { headers, signal: abort.signal });
+      if (mediaResponse(upstream) && upstream.url.startsWith('https://')) {
+        resolved.set(key, { url: upstream.url, expires: Date.now() + 60_000 });
+        if (resolved.size > 200) resolved.delete(resolved.keys().next().value);
+      }
+    }
   } catch {
     return res.status(502).json({ error: 'Stream unavailable' });
   } finally {
     clearTimeout(timer);
   }
 
-  if (!upstream.ok || !upstream.body || !upstream.headers.get('content-type')?.startsWith('audio/')) {
+  if (!mediaResponse(upstream)) {
     upstream.body?.cancel().catch(() => {});
     return res.status(502).json({ error: 'Stream unavailable' });
   }

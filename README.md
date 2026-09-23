@@ -28,6 +28,13 @@ The compatible `/api?type=search&id=...` endpoint also returns local media
 paths. The upstream service can occasionally return no search results or an
 unavailable stream, which the API reports directly.
 
+Search results are cached at the CDN for 15 minutes and in the browser for
+15 minutes. The player shows a recent result immediately and refreshes it in
+the background when needed. A short-lived media URL cache avoids re-resolving
+the same song when a listener seeks; all audio still flows through Meting's
+stream proxy. Fresh, uncached searches still depend on the upstream response
+time.
+
 ## Requirements
 
 - Node.js >= 12.0.0

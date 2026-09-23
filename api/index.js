@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       const limit = Math.min(30, Math.max(1, parseInt(query.limit, 10) || 12));
       const result = await searchQijieya(id.slice(0, 120), limit);
       if (!result.ok) throw new Error('Search unavailable');
-      res.setHeader('Cache-Control', 'public, s-maxage=60');
+      res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=3600');
       return res.status(200).json(result.tracks.map(publicTrack));
     }
     const upstream = await fetch(qijieyaUrl(type, id), { signal: AbortSignal.timeout(11000) });
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     }
     const data = await upstream.json();
     if (!Array.isArray(data)) throw new Error('Catalog unavailable');
-    res.setHeader('Cache-Control', 'public, s-maxage=60');
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=3600');
     return res.status(200).json(data.map(normalizeQijieyaTrack).filter(Boolean).map(publicTrack));
   } catch {
     return res.status(503).json({ error: 'Catalog temporarily unavailable' });

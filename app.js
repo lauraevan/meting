@@ -26,6 +26,25 @@ const state = {
 };
 
 const audio = $('#audio');
+const SEARCH_CACHE_KEY = 'meting:search:v2';
+const SEARCH_CACHE_TTL = 15 * 60 * 1000;
+const searchCache = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || '{}');
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch { return {}; }
+})();
+const cachedTracks = query => {
+  const entry = searchCache[query.toLowerCase()];
+  if (!entry || Date.now() - entry.at > SEARCH_CACHE_TTL || !Array.isArray(entry.tracks)) return null;
+  return entry;
+};
+const rememberTracks = (query, tracks) => {
+  searchCache[query.toLowerCase()] = { at: Date.now(), tracks };
+  const keys = Object.keys(searchCache).sort((a, b) => searchCache[b].at - searchCache[a].at);
+  for (const key of keys.slice(20)) delete searchCache[key];
+  try { localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(searchCache)); } catch { /* Storage is optional. */ }
+};
 
 const togglePlayback = () => {
   if (!state.current) return;
@@ -76,12 +95,17 @@ const setArtwork = (element, track, size) => {
 
   const url = artworkUrl(track, size);
   if (!url) { element.style.backgroundImage = ''; element.classList.add('placeholder'); return; }
+  if (element.dataset.artworkUrl === url) return;
+  element.dataset.artworkUrl = url;
+  element.style.backgroundImage = '';
+  element.classList.add('placeholder');
   const image = new Image();
   image.onload = () => {
+    if (element.dataset.artworkUrl !== url) return;
     element.style.backgroundImage = `url("${url}")`;
     element.classList.remove('placeholder');
   };
-  image.onerror = () => { element.style.backgroundImage = ''; element.classList.add('placeholder'); };
+  image.onerror = () => { if (element.dataset.artworkUrl === url) element.dataset.artworkUrl = ''; };
   image.src = url;
 };
 
@@ -351,13 +375,25 @@ const search = async (query, { scroll = true } = {}) => {
   state.query = query;
   resultsTitle.textContent = `Results for “${query}”`;
   resultMeta.textContent = '';
-  renderSkeletons();
-  speedText.textContent = 'Searching…';
+  const cached = cachedTracks(query);
+  const request = ++state.searchRequest;
+  if (cached) {
+    state.tracks = [...cached.tracks];
+    state.searchTracks = [...state.tracks];
+    resultsSubtitle.textContent = 'Music to play';
+    resultMeta.textContent = `${state.tracks.length} tracks`;
+    speedText.textContent = 'Ready';
+    renderTracks();
+    if (scroll) $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (Date.now() - cached.at < 2 * 60 * 1000) return;
+  } else {
+    renderSkeletons();
+    speedText.textContent = 'Searching…';
+  }
 
   const params = new URLSearchParams({ q: query, limit: '10' });
 
   const started = performance.now();
-  const request = ++state.searchRequest;
 
   try {
     const response = await fetch(`/api/search?${params}`);
@@ -368,6 +404,7 @@ const search = async (query, { scroll = true } = {}) => {
 
     state.tracks = data.tracks || [];
     state.searchTracks = [...state.tracks];
+    if (state.tracks.length) rememberTracks(query, state.tracks);
     resultsSubtitle.textContent = 'Music to play';
 
     const clientElapsed = Math.round(performance.now() - started);
@@ -378,11 +415,13 @@ const search = async (query, { scroll = true } = {}) => {
     if (scroll) $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     if (request !== state.searchRequest) return;
-    state.tracks = [];
-    tracksEl.innerHTML = '<div class="empty-row">Search is unavailable right now. Try again in a moment.</div>';
-    resultMeta.textContent = '';
-    speedText.textContent = 'Search failed';
-    toast(error.message || 'Search failed');
+    if (!cached) {
+      state.tracks = [];
+      tracksEl.innerHTML = '<div class="empty-row">Search is unavailable right now. Try again in a moment.</div>';
+      resultMeta.textContent = '';
+      speedText.textContent = 'Search failed';
+      toast(error.message || 'Search failed');
+    }
   }
 };
 
@@ -531,6 +570,7 @@ audio.volume = Number(volume.value);
 const bootstrap = async () => {
   renderQuickGrid();
   renderQueue();
+  search('The Weeknd Blinding Lights', { scroll: false });
 
   try {
     const response = await fetch('/api/health');
@@ -542,7 +582,6 @@ const bootstrap = async () => {
     $('#apiStatus').textContent = 'Unavailable';
   }
 
-  search('The Weeknd Blinding Lights', { scroll: false });
 };
 
 bootstrap();

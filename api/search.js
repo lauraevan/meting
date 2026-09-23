@@ -2,7 +2,7 @@ import { clamp, matchScore, searchDeezer } from '../server/music.js';
 import { searchQijieya } from '../server/qijieya.js';
 
 const cache = new Map();
-const TTL = 5 * 60 * 1000;
+const TTL = 15 * 60 * 1000;
 
 export default async function handler(req, res) {
   const query = String(req.query.q || '').trim().slice(0, 120);
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await entry.value;
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=3600');
     return res.status(200).json(result);
   } catch {
     if (stale && stale !== entry) {
