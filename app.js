@@ -2,6 +2,7 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 const providerMeta = {
+  qijieya: { name: 'Meting Music', short: 'MM' },
   youtube: { name: 'YouTube Music', short: 'YT' },
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
@@ -30,7 +31,7 @@ const state = {
   playing: false,
   latencies: {},
   providerHealth: {},
-  availableProviders: ['youtube', 'netease', 'tencent', 'kugou', 'kuwo'],
+  availableProviders: ['qijieya', 'netease', 'tencent', 'kugou', 'kuwo', 'youtube'],
   youtubeStreamBackend: false,
   failedSources: new Set(),
   likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
@@ -145,7 +146,7 @@ const artworkUrl = (track, size = 500, source = track?.source) => {
 
 const orderedSources = track =>
   Object.keys(track?.sources || {})
-    .sort((a, b) => (state.latencies[a] ?? 99999) - (state.latencies[b] ?? 99999));
+    .sort((a, b) => (a === 'qijieya' ? -1 : 0) - (b === 'qijieya' ? -1 : 0) || (state.latencies[a] ?? 99999) - (state.latencies[b] ?? 99999));
 
 const streamUrl = (track, source = track.source) => {
   const data = sourceData(track, source);
@@ -160,7 +161,7 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = [track.source, 'youtube', 'netease', 'tencent', 'kugou', 'kuwo']
+  const candidates = [track.source, 'qijieya', 'youtube', 'netease', 'tencent', 'kugou', 'kuwo']
     .filter((source, index, list) => source && list.indexOf(source) === index)
     .filter(source => track.sources?.[source]?.pic_id);
 

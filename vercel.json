@@ -1,8 +1,11 @@
 {
   "functions": {
-    "api/*.js": {
-      "maxDuration": 15
-    }
+    "api/index.js": { "maxDuration": 15 },
+    "api/search.js": { "maxDuration": 15 },
+    "api/artwork.js": { "maxDuration": 15 },
+    "api/lyrics.js": { "maxDuration": 15 },
+    "api/health.js": { "maxDuration": 15 },
+    "api/stream.js": { "maxDuration": 300 }
   },
   "headers": [
     {

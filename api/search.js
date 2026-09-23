@@ -6,6 +6,7 @@ import {
   searchMetingProvider
 } from '../server/music.js';
 import { searchYouTube } from '../server/youtube.js';
+import { searchQijieya } from '../server/qijieya.js';
 
 // Warm serverless instances can reuse normalized search results and share
 // identical concurrent requests. Vercel's CDN handles cross-instance hits.
@@ -40,10 +41,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing search query' });
   }
 
-  if (requestedSource && !['youtube', ...PLAYBACK_PROVIDERS].includes(requestedSource)) {
+  if (requestedSource && !['qijieya', 'youtube', ...PLAYBACK_PROVIDERS].includes(requestedSource)) {
     return res.status(400).json({ error: 'Unknown source' });
   }
-  const providers = requestedSource ? [requestedSource] : ['youtube', ...PLAYBACK_PROVIDERS];
+  const providers = requestedSource ? [requestedSource] : ['qijieya', ...PLAYBACK_PROVIDERS];
 
   const key = `${query.toLowerCase()}|${limit}|${providers.join(',')}`;
 
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
       const started = performance.now();
 
       const metingProviders = providers.filter(provider => PLAYBACK_PROVIDERS.includes(provider));
-      const [deezer, metingResults, youtubeResult] = await Promise.all([
+      const [deezer, metingResults, youtubeResult, approvedResult] = await Promise.all([
     (!metingProviders.length ? Promise.resolve({ ok: false, elapsedMs: null, tracks: [] }) : searchDeezer(query, Math.max(limit * 2, 20))).catch(() => ({
       ok: false,
       elapsedMs: null,
@@ -68,16 +69,13 @@ export default async function handler(req, res) {
         }))
       )
     ),
-    providers.includes('youtube') ? searchYouTube(query, Math.max(limit, 12)) : Promise.resolve(null)
+    providers.includes('youtube') ? searchYouTube(query, Math.max(limit, 12)) : Promise.resolve(null),
+    providers.includes('qijieya') ? searchQijieya(query, Math.max(limit, 12)) : Promise.resolve(null)
       ]);
 
-      const providerResults = [...(youtubeResult ? [youtubeResult] : []), ...metingResults];
-      const metingTracks = mergeDeezerWithSources(deezer.tracks, metingResults, limit);
-      // Keep independent recordings distinct; a title match does not prove the same audio.
-      const tracks = requestedSource === 'youtube' ? youtubeResult.tracks.slice(0, limit)
-        : metingTracks;
-      if (!requestedSource) tracks.unshift(...(youtubeResult?.tracks || []).slice(0, Math.ceil(limit / 2)));
-      if (!requestedSource) tracks.length = Math.min(tracks.length, limit);
+      const providerResults = [...(approvedResult ? [approvedResult] : []), ...(youtubeResult ? [youtubeResult] : []), ...metingResults];
+      const metingTracks = mergeDeezerWithSources(deezer.tracks, approvedResult ? [approvedResult, ...metingResults] : metingResults, limit);
+      const tracks = requestedSource === 'youtube' ? youtubeResult.tracks.slice(0, limit) : metingTracks;
       return {
         query,
         elapsedMs: Math.round(performance.now() - started),
@@ -90,7 +88,7 @@ export default async function handler(req, res) {
     });
 
     // Do not cache an outage as an empty catalog.
-    if (!result.metadata.ok && !result.providers.some(item => item.ok)) cache.delete(key);
+    if (!result.providers.some(item => item.ok && item.count > 0)) cache.delete(key);
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.status(200).json(result);
   } catch (error) {

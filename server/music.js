@@ -183,7 +183,8 @@ const sourcePayload = track => ({
 
 export const mergeDeezerWithSources = (deezerTracks, providerResults, limit) => {
   const providerOrder = [...providerResults]
-    .sort((a, b) => (a.elapsedMs ?? 99999) - (b.elapsedMs ?? 99999))
+    .sort((a, b) => (a.provider === 'qijieya' ? -1 : 0) - (b.provider === 'qijieya' ? -1 : 0)
+      || (a.elapsedMs ?? 99999) - (b.elapsedMs ?? 99999))
     .map(result => result.provider);
 
   const merged = deezerTracks.map(track => {

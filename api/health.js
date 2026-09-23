@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     version: '0.3.0',
     metadata: 'deezer',
     artwork: 'provider',
-    playbackProviders: ['youtube', ...PLAYBACK_PROVIDERS],
+    playbackProviders: ['qijieya', ...PLAYBACK_PROVIDERS, 'youtube'],
     youtubeStreamBackend: streamHealth.ok && Boolean(process.env.YOUTUBE_STREAM_ORIGIN)
   });
 }
