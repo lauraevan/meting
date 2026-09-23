@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meting API</title>
+  <style>
+    :root { --bg: #fff; --fg: #1f2328; --muted: #59636e; --code: #f6f8fa; --link: #0969da; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --code: #161b22; --link: #4493f8; }
+    }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px; }
+    code, pre { background: var(--code); border-radius: 6px; font-family: ui-monospace, monospace; font-size: 14px; }
+    code { padding: 2px 6px; }
+    pre { padding: 12px 16px; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--code); vertical-align: top; }
+    a { color: var(--link); }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Meting API</h1>
+  <p class="muted">基于 <a href="https://github.com/metowolf/Meting">Meting</a> 的音乐 API，支持网易云、QQ 音乐、酷狗、百度、酷我。</p>
+
+  <h2>请求</h2>
+  <pre>GET /api?server=netease&amp;type=search&amp;id=关键词</pre>
+
+  <table>
+    <tr><th>参数</th><th>说明</th></tr>
+    <tr><td><code>server</code></td><td><code>netease</code> / <code>tencent</code> / <code>kugou</code> / <code>baidu</code> / <code>kuwo</code>，默认 <code>netease</code></td></tr>
+    <tr><td><code>type</code></td><td><code>search</code> / <code>song</code> / <code>album</code> / <code>artist</code> / <code>playlist</code> / <code>url</code> / <code>lyric</code> / <code>pic</code></td></tr>
+    <tr><td><code>id</code></td><td>搜索关键词或资源 ID（必填）</td></tr>
+    <tr><td><code>page</code>, <code>limit</code></td><td>搜索分页，默认 1 / 30；<code>artist</code> 的 <code>limit</code> 默认 50</td></tr>
+    <tr><td><code>br</code></td><td><code>url</code> 码率（kbps），默认 320</td></tr>
+    <tr><td><code>size</code></td><td><code>pic</code> 尺寸，默认 300</td></tr>
+    <tr><td><code>format</code></td><td>传 <code>0</code> 返回平台原始数据，默认返回标准化数据</td></tr>
+  </table>
+
+  <h2>示例</h2>
+  <ul>
+    <li><a href="/api?server=netease&amp;type=search&amp;id=%E7%83%9F%E7%81%AB%E9%87%8C%E7%9A%84%E5%B0%98%E5%9F%83&amp;limit=5">/api?server=netease&amp;type=search&amp;id=烟火里的尘埃&amp;limit=5</a></li>
+    <li><a href="/api?server=netease&amp;type=song&amp;id=35847388">/api?server=netease&amp;type=song&amp;id=35847388</a></li>
+    <li><a href="/api?server=netease&amp;type=lyric&amp;id=35847388">/api?server=netease&amp;type=lyric&amp;id=35847388</a></li>
+  </ul>
+</main>
+</body>
+</html>
