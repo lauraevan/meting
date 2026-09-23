@@ -262,7 +262,7 @@ const renderTracks = () => {
   tracksEl.innerHTML = state.tracks.map((track, index) => {
     const active = state.current?.id === track.id ? 'active' : '';
     return `
-      <div class="track-row ${active}" data-index="${index}">
+      <div class="track-row ${active}" data-index="${index}" role="button" tabindex="0" aria-label="Play ${escapeHtml(track.name)} by ${escapeHtml(track.artist.join(', '))}">
         <div class="track-num">${String(index + 1).padStart(2, '0')}</div>
         <div class="track-art placeholder" data-index="${index}"></div>
         <div class="track-title">
@@ -270,19 +270,18 @@ const renderTracks = () => {
           <span>${escapeHtml(track.artist.join(', '))}</span>
         </div>
         <div class="track-album">${escapeHtml(track.album || 'Single')}</div>
-        <button class="track-action" data-play="${index}" aria-label="Play">▶</button>
+        <span class="track-action" aria-hidden="true">▶</span>
       </div>
     `;
   }).join('');
 
   $$('.track-row').forEach(row => {
-    row.addEventListener('dblclick', () => playIndex(Number(row.dataset.index)));
-  });
-
-  $$('[data-play]').forEach(button => {
-    button.addEventListener('click', event => {
+    row.addEventListener('click', () => playIndex(Number(row.dataset.index)));
+    row.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
       event.stopPropagation();
-      playIndex(Number(button.dataset.play));
+      playIndex(Number(row.dataset.index));
     });
   });
 
