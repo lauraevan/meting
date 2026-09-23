@@ -2,6 +2,16 @@ import yts from 'yt-search';
 
 const junk = /\b(cover|reaction|tutorial|karaoke|nightcore|sped up|slowed|remix|mashup|instrumental|live stream|1 hour|10 hours)\b/i;
 const validId = id => /^[a-zA-Z0-9_-]{11}$/.test(id);
+const bounded = async (work, ms) => {
+  let timer;
+  try {
+    return await Promise.race([work, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('YouTube search timed out')), ms);
+    })]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 export const searchYouTube = async (query, limit) => {
   const started = performance.now();
@@ -19,17 +29,17 @@ export const searchYouTube = async (query, limit) => {
       }));
     } else {
       // Public search needs no credentials. Use a bounded wait so other sources can return.
-      const raw = await Promise.race([
-        yts(query),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('YouTube search timed out')), 5000))
-      ]);
+      const searchTerms = query.trim().split(/\s+/).length <= 2 ? `${query} official audio` : query;
+      const raw = await bounded(yts(searchTerms), 5000);
       videos = raw.videos || [];
     }
 
+    const terms = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
     const normalized = videos
       .filter(video => validId(video.videoId) && video.title && !junk.test(video.title))
       .sort((a, b) => {
-        const score = v => (/ - Topic$/i.test(v.author?.name || '') ? 3 : 0)
+        const score = v => terms.reduce((n, word) => n + ((v.title || '').toLowerCase().includes(word) ? 5 : (v.author?.name || '').toLowerCase().includes(word) ? 2 : 0), 0)
+          + (/ - Topic$/i.test(v.author?.name || '') ? 3 : 0)
           + (/VEVO|official/i.test(v.author?.name || '') ? 2 : 0)
           + (/official (audio|video|music video)/i.test(v.title || '') ? 1 : 0);
         return score(b) - score(a);

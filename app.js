@@ -11,10 +11,10 @@ const providerMeta = {
 };
 
 const quickSearches = [
-  { title: 'The Weeknd', query: 'The Weeknd', copy: 'After Hours · Starboy' },
-  { title: 'Hans Zimmer', query: 'Hans Zimmer', copy: 'Interstellar · Dune' },
-  { title: 'Kendrick Lamar', query: 'Kendrick Lamar', copy: 'GNX · DAMN.' },
-  { title: 'NewJeans', query: 'NewJeans', copy: 'Get Up · New Jeans' }
+  { title: 'The Weeknd', query: 'The Weeknd Blinding Lights', copy: 'Blinding Lights · After Hours' },
+  { title: 'Hans Zimmer', query: 'Hans Zimmer Interstellar', copy: 'Interstellar · Dune' },
+  { title: 'Kendrick Lamar', query: 'Kendrick Lamar Not Like Us', copy: 'GNX · DAMN.' },
+  { title: 'NewJeans', query: 'NewJeans Super Shy', copy: 'Get Up · New Jeans' }
 ];
 
 const state = {
@@ -64,7 +64,14 @@ const loadYouTube = () => {
             }
             updatePlayerUI();
           },
-          onError: () => { if (usingYouTube()) tryNextSource(state.playbackRequest); }
+          onError: () => { if (usingYouTube()) tryNextSource(state.playbackRequest); },
+          onAutoplayBlocked: () => {
+            if (usingYouTube()) {
+              state.playing = false;
+              updatePlayerUI();
+              speedText.textContent = 'Tap the video to play';
+            }
+          }
         }
       });
     };
@@ -742,7 +749,7 @@ const bootstrap = async () => {
     $('#apiStatus').textContent = 'Unavailable';
   }
 
-  search('The Weeknd', { scroll: false });
+  search('The Weeknd Blinding Lights', { scroll: false });
 };
 
 bootstrap();
