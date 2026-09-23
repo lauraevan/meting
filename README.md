@@ -34,7 +34,7 @@ Search results are cached at the CDN for 15 minutes and in the browser for
 15 minutes. The player shows a recent result immediately and refreshes it in
 the background when needed. A short-lived media URL cache avoids re-resolving
 the same song when a listener seeks; all audio still flows through Synth's
-stream proxy. The player prepares the first result after a search and the next
+stream proxy. The player prepares the first two results after a search and the next
 song while the current song plays. These prepared streams are reused on Play
 or Next, so common listening actions avoid a fresh stream request. Fresh,
 uncached songs still depend on the upstream response time.

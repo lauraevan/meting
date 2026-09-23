@@ -294,6 +294,7 @@ const renderTracks = () => {
 
   hydrateArtwork();
   prepareTrack(state.tracks[0]);
+  if (!state.current) prepareTrack(state.tracks[1], standbyAudio);
 };
 
 const prepareHoveredTrack = event => {
@@ -382,7 +383,7 @@ const playIndex = async index => {
   if (!track) return;
 
   clearTimeout(previewTimer);
-  if (state.current && standbyAudio.getAttribute('src') === streamUrl(track)) {
+  if (standbyAudio.getAttribute('src') === streamUrl(track)) {
     audio.pause();
     [audio, standbyAudio] = [standbyAudio, audio];
   }
