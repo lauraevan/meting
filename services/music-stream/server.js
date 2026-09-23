@@ -80,7 +80,8 @@ http.createServer(async (req, res) => {
       ...(upstream.headers.get('content-range') ? { 'Content-Range': upstream.headers.get('content-range') } : {})
     });
     Readable.fromWeb(upstream.body).on('error', () => res.destroy()).pipe(res);
-  } catch {
+  } catch (error) {
+    console.error('Stream failed:', String(error?.message || error).split('\n')[0].replace(/https?:\/\/\S+/g, '[url]').slice(0, 300));
     if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Audio unavailable' }));
     else res.destroy();
   }
