@@ -5,10 +5,9 @@ export default function handler(req, res) {
   res.status(200).json({
     ok: true,
     name: 'Meting Demo API',
-    version: '0.2.0',
+    version: '0.2.1',
     metadata: 'deezer',
-    artwork: 'apple-music',
-    appleArtworkConfigured: Boolean(process.env.APPLE_MUSIC_DEVELOPER_TOKEN),
+    artwork: 'meting',
     playbackProviders: PLAYBACK_PROVIDERS
   });
 }
