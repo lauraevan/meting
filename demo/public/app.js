@@ -69,7 +69,7 @@ const toast = message => {
 const sourceData = (track, source = track?.source) =>
   track?.sources?.[source] || track || {};
 
-const artworkEndpoint = (track, size = 500) => {
+const artworkUrl = (track, size = 500) => {
   const params = new URLSearchParams({
     title: track?.name || '',
     artist: track?.artist?.join(', ') || '',
@@ -85,7 +85,7 @@ const orderedSources = track =>
 
 const streamUrl = (track, source = track.source) => {
   const data = sourceData(track, source);
-  return `/api/stream?source=${encodeURIComponent(source)}&id=${encodeURIComponent(data.url_id || data.id || '')}&br=320` ;
+  return `/api/stream?source=${encodeURIComponent(source)}&id=${encodeURIComponent(data.url_id || data.id || '')}&br=320`;
 };
 
 const lyricsUrl = track => {
@@ -96,7 +96,7 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const apple = artworkEndpoint(track, size);
+  const apple = artworkUrl(track, size);
   const fallback = track.artwork || '';
   const image = new Image();
 
@@ -126,7 +126,6 @@ const setArtwork = (element, track, size) => {
 
   image.src = apple;
 };
-
 const renderSources = () => {
   const providers = ['all', ...Object.keys(providerMeta)];
   sourceList.innerHTML = providers.map(source => {
@@ -136,7 +135,7 @@ const renderSources = () => {
       ? ''
       : state.latencies[source] != null
         ? `${state.latencies[source]}ms`
-        : 'â";
+        : '—';
 
     return `
       <button class="source-row ${active}" data-source="${source}">
@@ -159,8 +158,350 @@ const renderSources = () => {
 };
 
 const renderQuickGrid = () => {
-  $('#quickGrid').innerHTML = quickSearches.map((item, index) => `(ñÕÑÑ½¸±ÍÌôÅÕ¥¬µÉÑµÅÕÉäôíÍÁ!Ñµ°¡¥Ñ´¹ÅÕÉä¥ôø(ñÍÑÉ½¹øíÍÁ!Ñµ°¡¥Ñ´¹Ñ¥Ñ±¥ôð½ÍÑÉ½¹ø(ñÍÁ¸øíÍÁ!Ñµ°¡¥Ñ´¹½Áä¥ôð½ÍÁ¸ø(ñ¥Ø±ÍÌôÅÕ¥¬µ¥¹àøÀí¥¹à¬Åôð½¥Øø(ð½ÕÑÑ½¸ø(¤¹©½¥¸ ¤ì(( ¹ÅÕ¥¬µÉ¤¹½É ¡Éôøì(É¹Ù¹Ñ1¥ÍÑ¹È ±¥¬° ¤ôøì(ÍÉ¡%¹ÁÕÐ¹Ù±ÕôÉ¹ÑÍÐ¹ÅÕÉäì(ÍÉ ¡É¹ÑÍÐ¹ÅÕÉä¤ì(ô¤ì(ô¤ì)ôì()½¹ÍÐÉ¹ÉM­±Ñ½¹Ìô ¤ôøì(ÑÉ­Í°¹¥¹¹É!Q50ôÉÉä¹É½´¡ì±¹Ñ èÜô°¡|°¥¹à¤ôø(ñ¥Ø±ÍÌôÑÉ¬µÉ½Üø(ñ¥Ø±ÍÌôÑÉ¬µ¹Õ´øíMÑÉ¥¹¡¥¹à¬Ä¤¹ÁMÑÉÐ È°À¥ôð½¥Øø(ñ¥Ø±ÍÌôÑÉ¬µÉÐÍ­±Ñ½¸øð½¥Øø(ñ¥Ø±ÍÌôÑÉ¬µÑ¥Ñ±ø(ñ¥Ø±ÍÌôÍ­±Ñ½¸ÍÑå±ô¡¥¡ÐèÄÉÁàíÝ¥Ñ èìÔÔ¬¡¥¹àÌ¤¨ÄÁôí½ÉÈµÉ¥ÕÌèÕÁàøð½¥Øø(ñ¥Ø±ÍÌôÍ­±Ñ½¸ÍÑå±ô¡¥¡ÐèáÁàíÝ¥Ñ èÐÈí½ÉÈµÉ¥ÕÌèÕÁàíµÉ¥¸µÑ½ÀèÝÁàøð½¥Øø(ð½¥Øø(ñ¥Ø±ÍÌôÍ­±Ñ½¸ÍÑå±ô¡¥¡ÐèåÁàíÝ¥Ñ èØÐí½ÉÈµÉ¥ÕÌèÕÁàøð½¥Øø(ñ¥Ø±ÍÌôÍ­±Ñ½¸ÍÑå±ô¡¥¡ÐèÈÉÁàíÝ¥Ñ èØÉÁàí½ÉÈµÉ¥ÕÌèääåÁàøð½¥Øø(ñ¥Øøð½¥Øø(ð½¥Øø(¤¹©½¥¸ ¤ì)ôì()½¹ÍÐ¡åÉÑÉÑÝ½É¬ô ¤ôøì( ¹ÑÉ¬µÉÑmÑµ¥¹át¤¹½É ¡°ôøì(½¹ÍÐÑÉ¬ôÍÑÑ¹ÑÉ­Ím9ÕµÈ¡°¹ÑÍÐ¹¥¹à¥tì(ÍÑÉÑÝ½É¬¡°°ÑÉ¬°ÈÈÀ¤ì(ô¤ì)ôì()½¹ÍÐÉ¹ÉQÉ­Ìô ¤ôøì(¥ ÍÑÑ¹ÑÉ­Ì¹±¹Ñ ¤ì(ÑÉ­Í°¹¥¹¹É!Q50ôñ¥Ø±ÍÌôµÁÑäµÉ½Üù9¼µÑ¡¥¹ÑÉ­Ìµ¬É½´Ñ¡Ñ¥ÙÍ½ÕÉÌ¸ð½¥Øøì(ÉÑÕÉ¸ì(ô((ÑÉ­Í°¹¥¹¹É!Q50ôÍÑÑ¹ÑÉ­Ì¹µÀ ¡ÑÉ¬°¥¹à¤ôøì(½¹ÍÐÑ¥ÙôÍÑÑ¹ÕÉÉ¹Ðü¹¥ôôôÑÉ¬¹¥üÑ¥Ùèì(½¹ÍÐµÑQôÑÉ¬¹µÑÑM½ÕÉôôôéÈüéÈµÑè±±¬ì((ÉÑÕÉ¸(ñ¥Ø±ÍÌôÑÉ¬µÉ½ÜíÑ¥ÙôÑµ¥¹àôí¥¹áôø(ñ¥Ø±ÍÌôÑÉ¬µ¹Õ´øíMÑÉ¥¹¡¥¹à¬Ä¤¹ÁMÑÉÐ È°À¥ôð½¥Øø(ñ¥Ø±ÍÌôÑÉ¬µÉÐÁ±¡½±ÈÑµ¥¹àôí¥¹áôøð½¥Øø(ñ¥Ø±ÍÌôÑÉ¬µÑ¥Ñ±ø(ñÍÑÉ½¹øíÍÁ!Ñµ°¡ÑÉ¬¹¹µ¥ôð½ÍÑÉ½¹ø(ñÍÁ¸øíÍÁ!Ñµ°¡ÑÉ¬¹ÉÑ¥ÍÐ¹©½¥¸ °¤¥ôð½ÍÁ¸ø(ð½¥Øø(ñ¥Ø±ÍÌôÑÉ¬µ±Õ´øíÍÁ!Ñµ°¡ÑÉ¬¹±Õ´ñðM¥¹±¥ôð½¥Øø(ñ¥Ø±ÍÌôÁÉ½Ù¥Èµ¡¥ÀøíÍÁ!Ñµ°¡ÁÉ½Ù¥É9µ¡ÑÉ¬¹Í½ÕÉ¤¥ô\íµÑQôð½¥Øø(ñÕÑÑ½¸±ÍÌôÑÉ¬µÑ¥½¸ÑµÁ±äôí¥¹áôÉ¥µ±°ôA±äûZð½ÕÑÑ½¸ø(ð½¥Øø(ì(ô¤¹©½¥¸ ¤ì(( ¹ÑÉ¬µÉ½Ü¤¹½É ¡É½Üôøì(É½Ü¹Ù¹Ñ1¥ÍÑ¹È ±±¥¬° ¤ôøÁ±å%¹à¡9ÕµÈ¡É½Ü¹ÑÍÐ¹¥¹à¤¤¤ì(ô¤ì(( mÑµÁ±åt¤¹½É ¡ÕÑÑ½¸ôøì(ÕÑÑ½¸¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°Ù¹Ðôøì(Ù¹Ð¹ÍÑ½ÁAÉ½ÁÑ¥½¸ ¤ì(Á±å%¹à¡9ÕµÈ¡ÕÑÑ½¸¹ÑÍÐ¹Á±ä¤¤ì(ô¤ì(ô¤ì((¡åÉÑÉÑÝ½É¬ ¤ì)ôì()½¹ÍÐÕÁÑA±åÉU$ô ¤ôøì(½¹ÍÐÑÉ¬ôÍÑÑ¹ÕÉÉ¹Ðì( ÅÕÕ½Õ¹Ð¤¹ÑáÑ½¹Ñ¹ÐôÍÑÑ¹ÅÕÕ¹±¹Ñ ì( Á±å	ÕÑÑ½¸¤¹ÑáÑ½¹Ñ¹ÐôÍÑÑ¹Á±å¥¹üv3v0èZØì((¥ ÑÉ¬¤ÉÑÕÉ¸ì(( µ¥¹¥Q¥Ñ±¤¹ÑáÑ½¹Ñ¹ÐôÑÉ¬¹¹µì( µ¥¹¥ÉÑ¥ÍÐ¤¹ÑáÑ½¹Ñ¹ÐôÑÉ¬¹ÉÑ¥ÍÐ¹©½¥¸ °¤ì( ¹½ÝQ¥Ñ±¤ì( ¹½ÝQ¥Ñ±¤¹ÑáÑ½¹Ñ¹ÐôÑÉ¬¹¹µì( ¹½ÝÉÑ¥ÍÐ¤¹ÑáÑ½¹Ñ¹ÐôÑÉ¬¹ÉÑ¥ÍÐ¹©½¥¸ °¤ì( ¹½ÝM½ÕÉ¤¹ÑáÑ½¹Ñ¹ÐôÁÉ½Ù¥É9µ¡ÑÉ¬¹Í½ÕÉ¤ì( ¹½ÝM½ÕÉ%½¸¤¹ÑáÑ½¹Ñ¹ÐôÁÉ½Ù¥ÉM¡½ÉÐ¡ÑÉ¬¹Í½ÕÉ¤ì((½¹ÍÐÍ½ÕÉ½Õ¹Ðô=©Ð¹­åÌ¡ÑÉ¬¹Í½ÕÉÌñðíô¤¹±¹Ñ ì( ¹½ÝEÕ±¥Ñä¤¹ÑáÑ½¹Ñ¹ÐôíÍ½ÕÉ½Õ¹ÑôµÑ¡Í½ÕÉíÍ½ÕÉ½Õ¹ÐôôôÄüèÌô
-ÜÌÈÀ­ÁÌÑÉÑì((ÍÑÉÑÝ½É¬  µ¥¹¥ÉÐ¤°ÑÉ¬°ÄàÀ¤ì(ÍÑÉÑÝ½É¬  ¹½ÝÉÐ¤°ÑÉ¬°ÄÀÀÀ¤ì(É¹ÉQÉ­Ì ¤ì)ôì()½¹ÍÐ±½1åÉ¥ÌôÍå¹ÑÉ¬ôøì( ±åÉ¥ÍMÑÑÕÌ¤¹ÑáÑ½¹Ñ¹Ðô1½¥¹ì( ±åÉ¥Ì¤¹ÑáÑ½¹Ñ¹ÐôÑ¡¥¹±åÉ¥Ïq¸ì((ÑÉäì(½¹ÍÐÉÍÁ½¹ÍôÝ¥ÐÑ ¡±åÉ¥ÍUÉ°¡ÑÉ¬¤¤ì(½¹ÍÐÑôÝ¥ÐÉÍÁ½¹Í¹©Í½¸ ¤ì((½¹ÍÐÁ±¥¸ô¡Ñ¹±åÉ¥ñð¤(¹ÉÁ± ½yqmmyqut­t­uqqÌ¨½´°¤(¹ÍÁ±¥Ð qq¸¤(¹µÀ¡±¥¹ôø±¥¹¹ÑÉ¥´ ¤¤(¹¥±ÑÈ¡	½½±¸¤(¹Í±¥ À°Äà¤(¹©½¥¸ qq¸¤ì(( ±åÉ¥Ì¤¹ÑáÑ½¹Ñ¹ÐôÁ±¥¸ñð1åÉ¥ÌÉÕ¹Ù¥±±½ÈÑ¡¥ÌÑÉ¬¸ì( ±åÉ¥ÍMÑÑÕÌ¤¹ÑáÑ½¹Ñ¹ÐôÁ±¥¸üMå¹èU¹Ù¥±±ì(ôÑ ì( ±åÉ¥Ì¤¹ÑáÑ½¹Ñ¹Ðô1åÉ¥ÌÉÕ¹Ù¥±±½ÈÑ¡¥ÌÑÉ¬¸ì( ±åÉ¥ÍMÑÑÕÌ¤¹ÑáÑ½¹Ñ¹ÐôU¹Ù¥±±ì(ô)ôì()½¹ÍÐÍÑÉÑÕÉÉ¹ÑM½ÕÉôÍå¹ ¤ôøì(½¹ÍÐÑÉ¬ôÍÑÑ¹ÕÉÉ¹Ðì(¥ ÑÉ¬ü¹Í½ÕÉ¤ÉÑÕÉ¸ì((½¹ÍÐÑôÍ½ÕÉÑ¡ÑÉ¬¤ì(¥ Ñü¹ÕÉ±}¥Ñü¹¥¤ì(Ñ¡É½Ü¹ÜÉÉ½È 9¼Í½ÕÉ¥¹Ñ¥¥È¤ì(ô((ÍÁQáÐ¹ÑáÑ½¹Ñ¹ÐôIÍ½±Ù¥¹íÁÉ½Ù¥É9µ¡ÑÉ¬¹Í½ÕÉ¥÷ì(Õ¥¼¹ÍÉôÍÑÉµUÉ°¡ÑÉ¬¤ì((ÑÉäì(Ý¥ÐÕ¥¼¹Á±ä ¤ì(ÍÁQáÐ¹ÑáÑ½¹Ñ¹ÐôÁÉ½Ù¥É9µ¡ÑÉ¬¹Í½ÕÉ¤ì(ôÑ ì(Ý¥ÐÑÉå9áÑM½ÕÉ ¤ì(ô)ôì()½¹ÍÐÑÉå9áÑM½ÕÉôÍå¹ ¤ôøì(½¹ÍÐÑÉ¬ôÍÑÑ¹ÕÉÉ¹Ðì(¥ ÑÉ¬¤ÉÑÕÉ¸ì((ÍÑÑ¹¥±M½ÕÉÌ¹¡ÑÉ¬¹Í½ÕÉ¤ì(½¹ÍÐ¹áÑM½ÕÉô½ÉÉM½ÕÉÌ¡ÑÉ¬¤¹¥¹¡Í½ÕÉôøÍÑÑ¹¥±M½ÕÉÌ¹¡Ì¡Í½ÕÉ¤¤ì((¥ ¹áÑM½ÕÉ¤ì(ÍÑÑ¹Á±å¥¹ô±Íì(ÍÁQáÐ¹ÑáÑ½¹Ñ¹Ðô9¼Á±å±Í½ÕÉì(ÕÁÑA±åÉU$ ¤ì(Ñ½ÍÐ ÙÉäµÑ¡Í½ÕÉ¥±½ÈÑ¡¥ÌÑÉ¬¸¤ì(ÉÑÕÉ¸ì(ô((ÑÉ¬¹Í½ÕÉô¹áÑM½ÕÉì(ÕÁÑA±åÉU$ ¤ì(Ý¥ÐÍÑÉÑÕÉÉ¹ÑM½ÕÉ ¤ì)ôì()½¹ÍÐÁ±å%¹àôÍå¹¥¹àôøì(½¹ÍÐÑÉ¬ôÍÑÑ¹ÑÉ­Ím¥¹átì(¥ ÑÉ¬¤ÉÑÕÉ¸ì((ÍÑÑ¹ÕÉÉ¹Ñ%¹àô¥¹àì(ÍÑÑ¹ÕÉÉ¹ÐôÑÉ¬ì(ÍÑÑ¹¥±M½ÕÉÌô¹ÜMÐ ¤ì((½¹ÍÐÍÑÍÐô½ÉÉM½ÕÉÌ¡ÑÉ¬¥lÁtì(¥¡ÍÑÍÐ¤ÑÉ¬¹Í½ÕÉôÍÑÍÐì((ÍÑÑ¹ÅÕÕôÍÑÑ¹ÑÉ­Ì¹Í±¥¡¥¹à¬Ä¤ì(ÍÑÑ¹Á±å¥¹ôÑÉÕì(ÕÁÑA±åÉU$ ¤ì(±½1åÉ¥Ì¡ÑÉ¬¤ì(Ý¥ÐÍÑÉÑÕÉÉ¹ÑM½ÕÉ ¤ì)ôì()½¹ÍÐ¹áÐô ¤ôøì(¥ ÍÑÑ¹ÑÉ­Ì¹±¹Ñ ¤ÉÑÕÉ¸ì(¥¡ÍÑÑ¹Í¡Õ±¤ì(Á±å%¹à¡5Ñ ¹±½½È¡5Ñ ¹É¹½´ ¤¨ÍÑÑ¹ÑÉ­Ì¹±¹Ñ ¤¤ì(ÉÑÕÉ¸ì(ô(½¹ÍÐ¹áÑ%¹àôÍÑÑ¹ÕÉÉ¹Ñ%¹àøôÍÑÑ¹ÑÉ­Ì¹±¹Ñ ´ÄüÀèÍÑÑ¹ÕÉÉ¹Ñ%¹à¬Äì(Á±å%¹à¡¹áÑ%¹à¤ì)ôì()½¹ÍÐÁÉÙ¥½ÕÌô ¤ôøì(¥¡Õ¥¼¹ÕÉÉ¹ÑQ¥µøÐ¤ì(Õ¥¼¹ÕÉÉ¹ÑQ¥µôÀì(ÉÑÕÉ¸ì(ô(½¹ÍÐÁÉÙ¥½ÕÍ%¹àôÍÑÑ¹ÕÉÉ¹Ñ%¹àðôÀüÍÑÑ¹ÑÉ­Ì¹±¹Ñ ´ÄèÍÑÑ¹ÕÉÉ¹Ñ%¹à´Äì(Á±å%¹à¡ÁÉÙ¥½ÕÍ%¹à¤ì)ôì()½¹ÍÐÍÉ ôÍå¹ÅÕÉäôøì(ÅÕÉäôMÑÉ¥¹¡ÅÕÉäñð¤¹ÑÉ¥´ ¤ì(¥ ÅÕÉä¤ÉÑÕÉ¸ì((ÍÑÑ¹ÅÕÉäôÅÕÉäì(ÉÍÕ±ÑÍQ¥Ñ±¹ÑáÑ½¹Ñ¹ÐôIÍÕ±ÑÌ½ÈpíÅÕÉå÷uì(ÉÍÕ±Ñ5Ñ¹ÑáÑ½¹Ñ¹Ðôì(É¹ÉM­±Ñ½¹Ì ¤ì(ÍÁQáÐ¹ÑáÑ½¹Ñ¹ÐôMÉ¡¥¹ì((½¹ÍÐÁÉµÌô¹ÜUI1MÉ¡AÉµÌ¡ìÄèÅÕÉä°±¥µ¥ÐèÄÈô¤ì(¥¡ÍÑÑ¹Í½ÕÉ¥±ÑÈôô±°¤ÁÉµÌ¹ÍÐ Í½ÕÉ°ÍÑÑ¹Í½ÕÉ¥±ÑÈ¤ì((½¹ÍÐÍÑÉÑôÁÉ½Éµ¹¹¹½Ü ¤ì((ÑÉäì(½¹ÍÐÉÍÁ½¹ÍôÝ¥ÐÑ ¡½Á¤½ÍÉ üíÁÉµÍõ¤ì(½¹ÍÐÑôÝ¥ÐÉÍÁ½¹Í¹©Í½¸ ¤ì((¥ ÉÍÁ½¹Í¹½¬¤Ñ¡É½Ü¹ÜÉÉ½È¡Ñ¹ÉÉ½ÈñðMÉ ¥±¤ì((ÍÑÑ¹ÑÉ­ÌôÑ¹ÑÉ­Ìñðmtì((½È¡½¹ÍÐÁÉ½Ù¥È½Ñ¹ÁÉ½Ù¥ÉÌñðmt¤ì(ÍÑÑ¹±Ñ¹¥ÍmÁÉ½Ù¥È¹ÁÉ½Ù¥ÉtôÁÉ½Ù¥È¹±ÁÍ5Ìì(ô((½¹ÍÐ±¥¹Ñ±ÁÍô5Ñ ¹É½Õ¹¡ÁÉ½Éµ¹¹¹½Ü ¤´ÍÑÉÑ¤ì(ÍÁQáÐ¹ÑáÑ½¹Ñ¹ÐôíÑ¹±ÁÍ5Ìüü±¥¹Ñ±ÁÍõµÌA%ì((½¹ÍÐÍ½ÕÉ½Õ¹Ðô¡Ñ¹ÁÉ½Ù¥ÉÌñðmt¤¹¥±ÑÈ¡¥Ñ´ôø¥Ñ´¹½¬¤¹±¹Ñ ì(½¹ÍÐéÈôÑ¹µÑÑü¹½¬(üéÈíÑ¹µÑÑ¹±ÁÍ5ÍõµÍ(èéÈ±±¬ì((ÉÍÕ±Ñ5Ñ¹ÑáÑ½¹Ñ¹ÐôíÍÑÑ¹ÑÉ­Ì¹±¹Ñ¡ôÑÉ­Ì
-ÜíéÉô
-ÜíÍ½ÕÉ½Õ¹ÑôÁ±å¬Í½ÕÉÍì((É¹ÉM½ÕÉÌ ¤ì(É¹ÉQÉ­Ì ¤ì( ÉÍÕ±ÑÍMÑ¥½¸¤¹ÍÉ½±±%¹Ñ½Y¥Ü¡ì¡Ù¥½ÈèÍµ½½Ñ °±½¬èÍÑÉÐô¤ì(ôÑ ¡ÉÉ½È¤ì(ÍÑÑ¹ÑÉ­Ìômtì(ÑÉ­Í°¹¥¹¹É!Q50ôñ¥Ø±ÍÌôµÁÑäµÉ½ÜùQ¡µ¼A$½Õ±¹½Ð½µÁ±ÑÑ¡¥ÌÍÉ ¸ð½¥Øøì(ÉÍÕ±Ñ5Ñ¹ÑáÑ½¹Ñ¹Ðôì(ÍÁQáÐ¹ÑáÑ½¹Ñ¹ÐôMÉ ¥±ì(Ñ½ÍÐ¡ÉÉ½È¹µÍÍñðMÉ ¥±¤ì(ô)ôì()ÍÉ¡½É´¹Ù¹Ñ1¥ÍÑ¹È ÍÕµ¥Ð°Ù¹Ðôøì(Ù¹Ð¹ÁÉÙ¹ÑÕ±Ð ¤ì(ÍÉ ¡ÍÉ¡%¹ÁÕÐ¹Ù±Õ¤ì)ô¤ì(( mÑµ½ÕÌµÍÉ¡t¤¹½É ¡ÕÑÑ½¸ôøì(ÕÑÑ½¸¹Ù¹Ñ1¥ÍÑ¹È ±¥¬° ¤ôøì(ÍÉ¡%¹ÁÕÐ¹½ÕÌ ¤ì(ÍÉ¡%¹ÁÕÐ¹Í±Ð ¤ì(ô¤ì)ô¤ì()½Õµ¹Ð¹Ù¹Ñ1¥ÍÑ¹È ­å½Ý¸°Ù¹Ðôøì(¥ ¡Ù¹Ð¹µÑ-äñðÙ¹Ð¹ÑÉ±-ä¤Ù¹Ð¹­ä¹Ñ½1½ÝÉÍ ¤ôôô¬¤ì(Ù¹Ð¹ÁÉÙ¹ÑÕ±Ð ¤ì(ÍÉ¡%¹ÁÕÐ¹½ÕÌ ¤ì(ÍÉ¡%¹ÁÕÐ¹Í±Ð ¤ì(ô((¥¡Ù¹Ð¹½ôôôMÁ½Õµ¹Ð¹Ñ¥Ù±µ¹ÐôôÍÉ¡%¹ÁÕÐ¤ì(Ù¹Ð¹ÁÉÙ¹ÑÕ±Ð ¤ì(¥ ÍÑÑ¹ÕÉÉ¹Ð¤ÉÑÕÉ¸ì(ÍÑÑ¹Á±å¥¹üÕ¥¼¹ÁÕÍ ¤èÕ¥¼¹Á±ä ¤ì(ô)ô¤ì(( Á±å	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬° ¤ôøì(¥ ÍÑÑ¹ÕÉÉ¹ÐÍÑÑ¹ÑÉ­Ì¹±¹Ñ ¤ÉÑÕÉ¸Á±å%¹à À¤ì(¥ ÍÑÑ¹ÕÉÉ¹Ð¤ÉÑÕÉ¸ì(ÍÑÑ¹Á±å¥¹üÕ¥¼¹ÁÕÍ ¤èÕ¥¼¹Á±ä ¤ì)ô¤ì(( ¹áÑ	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°¹áÐ¤ì( ÁÉÙ	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°ÁÉÙ¥½ÕÌ¤ì(( ÉÁÑ	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°Ù¹Ðôøì(ÍÑÑ¹ÉÁÐôÍÑÑ¹ÉÁÐì(Ù¹Ð¹ÕÉÉ¹ÑQÉÐ¹±ÍÍ1¥ÍÐ¹Ñ½± Ñ¥Ù°ÍÑÑ¹ÉÁÐ¤ì(Õ¥¼¹±½½ÀôÍÑÑ¹ÉÁÐì)ô¤ì(( Í¡Õ±	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°Ù¹Ðôøì(ÍÑÑ¹Í¡Õ±ôÍÑÑ¹Í¡Õ±ì(Ù¹Ð¹ÕÉÉ¹ÑQÉÐ¹±ÍÍ1¥ÍÐ¹Ñ½± Ñ¥Ù°ÍÑÑ¹Í¡Õ±¤ì)ô¤ì(( ¡ÉÑ	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬°Ù¹Ðôøì(Ù¹Ð¹ÕÉÉ¹ÑQÉÐ¹±ÍÍ1¥ÍÐ¹Ñ½± Ñ¥Ù¤ì(Ù¹Ð¹ÕÉÉ¹ÑQÉÐ¹ÑáÑ½¹Ñ¹ÐôÙ¹Ð¹ÕÉÉ¹ÑQÉÐ¹±ÍÍ1¥ÍÐ¹½¹Ñ¥¹Ì Ñ¥Ù¤üfèì)ô¤ì(( ÍÕÉÁÉ¥Í	ÕÑÑ½¸¤¹Ù¹Ñ1¥ÍÑ¹È ±¥¬° ¤ôøì(½¹ÍÐ¥Ñ´ôÅÕ¥­MÉ¡Ím5Ñ ¹±½½È¡5Ñ ¹É¹½´ ¤¨ÅÕ¥­MÉ¡Ì¹±¹Ñ ¥tì(ÍÉ¡%¹ÁÕÐ¹Ù±Õô¥Ñ´¹ÅÕÉäì(ÍÉ ¡¥Ñ´¹ÅÕÉä¤ì)ô¤ì()Õ¥¼¹Ù¹Ñ1¥ÍÑ¹È Á±ä° ¤ôøì(ÍÑÑ¹Á±å¥¹ôÑÉÕì(ÕÁÑA±åÉU$ ¤ì)ô¤ì()Õ¥¼¹Ù¹Ñ1¥ÍÑ¹È ÁÕÍ° ¤ôøì(ÍÑÑ¹Á±å¥¹ô±Íì(ÕÁÑA±åÉU$ ¤ì)ô¤ì()Õ¥¼¹Ù¹Ñ1¥ÍÑ¹È ¹° ¤ôøì(¥ ÍÑÑ¹ÉÁÐ¤¹áÐ ¤ì)ô¤ì()Õ¥¼¹Ù¹Ñ1¥ÍÑ¹È ÉÉ½È° ¤ôøì(¥¡ÍÑÑ¹ÕÉÉ¹Ð¤ÑÉå9áÑM½ÕÉ ¤ì)ô¤ì()Õ¥¼¹Ù¹Ñ1¥ÍÑ¹È Ñ¥µÕÁÑ° ¤ôøì(½¹ÍÐÕÉÑ¥½¸ôÕ¥¼¹ÕÉÑ¥½¸ñðÍÑÑ¹ÕÉÉ¹Ðü¹ÕÉÑ¥½¸ñðÀì(ÁÉ½ÉÍÌ¹Ù±ÕôÕÉÑ¥½¸ü5Ñ ¹É½Õ¹ ¡Õ¥¼¹ÕÉÉ¹ÑQ¥µ¼ÕÉÑ¥½¸¤¨ÄÀÀÀ¤èÀì( ÕÉÉ¹ÑQ¥µ¤¹ÑáÑ½¹Ñ¹Ðô½ÉµÑQ¥µ¡Õ¥¼¹ÕÉÉ¹ÑQ¥µ¤ì( ÕÉÑ¥½¸¤¹ÑáÑ½¹Ñ¹Ðô½ÉµÑQ¥µ¡ÕÉÑ¥½¸¤ì)ô¤ì()ÁÉ½ÉÍÌ¹Ù¹Ñ1¥ÍÑ¹È ¥¹ÁÕÐ° ¤ôøì(¥ Õ¥¼¹ÕÉÑ¥½¸¤ÉÑÕÉ¸ì(Õ¥¼¹ÕÉÉ¹ÑQ¥µô¡9ÕµÈ¡ÁÉ½ÉÍÌ¹Ù±Õ¤¼ÄÀÀÀ¤¨Õ¥¼¹ÕÉÑ¥½¸ì)ô¤ì()Ù½±Õµ¹Ù¹Ñ1¥ÍÑ¹È ¥¹ÁÕÐ° ¤ôøì(Õ¥¼¹Ù½±Õµô9ÕµÈ¡Ù½±Õµ¹Ù±Õ¤ì)ô¤ì()Õ¥¼¹Ù½±Õµô9ÕµÈ¡Ù½±Õµ¹Ù±Õ¤ì()½¹ÍÐ½½ÑÍÑÉÀôÍå¹ ¤ôøì(É¹ÉM½ÕÉÌ ¤ì(É¹ÉEÕ¥­É¥ ¤ì((ÑÉäì(½¹ÍÐÉÍÁ½¹ÍôÝ¥ÐÑ  ½Á¤½¡±Ñ ¤ì(½¹ÍÐÑôÝ¥ÐÉÍÁ½¹Í¹©Í½¸ ¤ì(ÍÑÑ¹ÁÁ±ÉÑÝ½É­½¹¥ÕÉô	½½±¸¡Ñ¹ÁÁ±ÉÑÝ½É­½¹¥ÕÉ¤ì(( Á¥MÑÑÕÌ¤¹ÑáÑ½¹Ñ¹ÐôÑ¹½¬(üéÈµÑ
-ÐíÑ¹ÁÁ±ÉÑÝ½É­½¹¥ÕÉüÁÁ±ÉÐèéÈÉÐ±±¬õ(èU¹Ù¥±±ì(ôÑ ì( Á¥MÑÑÕÌ¤¹ÑáÑ½¹Ñ¹ÐôU¹Ù¥±±ì(ô((ÍÉ  Q¡]­¹¤ì)ôì()½½ÑÍÑÉÀ ¤
+  $('#quickGrid').innerHTML = quickSearches.map((item, index) => `
+    <button class="quick-card" data-query="${escapeHtml(item.query)}">
+      <strong>${escapeHtml(item.title)}</strong>
+      <span>${escapeHtml(item.copy)}</span>
+      <div class="quick-index">0${index + 1}</div>
+    </button>
+  `).join('');
+
+  $$('.quick-card').forEach(card => {
+    card.addEventListener('click', () => {
+      searchInput.value = card.dataset.query;
+      search(card.dataset.query);
+    });
+  });
+};
+
+const renderSkeletons = () => {
+  tracksEl.innerHTML = Array.from({ length: 7 }, (_, index) => `
+    <div class="track-row">
+      <div class="track-num">${String(index + 1).padStart(2, '0')}</div>
+      <div class="track-art skeleton"></div>
+      <div class="track-title">
+        <div class="skeleton" style="height:12px;width:${55 + (index % 3) * 10}%;border-radius:5px"></div>
+        <div class="skeleton" style="height:8px;width:42%;border-radius:5px;margin-top:7px"></div>
+      </div>
+      <div class="skeleton" style="height:9px;width:64%;border-radius:5px"></div>
+      <div class="skeleton" style="height:22px;width:62px;border-radius:999px"></div>
+      <div></div>
+    </div>
+  `).join('');
+};
+
+const hydrateArtwork = () => {
+  $$('.track-art[data-index]').forEach(el => {
+    const track = state.tracks[Number(el.dataset.index)];
+    setArtwork(el, track, 220);
+  });
+};
+const renderTracks = () => {
+  if (!state.tracks.length) {
+    tracksEl.innerHTML = '<div class="empty-row">No matching tracks came back from the active sources.</div>';
+    return;
+  }
+
+  tracksEl.innerHTML = state.tracks.map((track, index) => {
+    const active = state.current?.id === track.id ? 'active' : '';
+    const metaTag = track.metadataSource === 'deezer' ? 'Deezer meta' : 'Fallback';
+    return `
+      <div class="track-row ${active}" data-index="${index}">
+        <div class="track-num">${String(index + 1).padStart(2, '0')}</div>
+        <div class="track-art placeholder" data-index="${index}"></div>
+        <div class="track-title">
+          <strong>${escapeHtml(track.name)}</strong>
+          <span>${escapeHtml(track.artist.join(', '))}</span>
+        </div>
+        <div class="track-album">${escapeHtml(track.album || 'Single')}</div>
+        <div class="provider-chip">${escapeHtml(providerName(track.source))} · ${metaTag}</div>
+        <button class="track-action" data-play="${index}" aria-label="Play">▶</button>
+      </div>
+    `;
+  }).join('');
+
+  $$('.track-row').forEach(row => {
+    row.addEventListener('dblclick', () => playIndex(Number(row.dataset.index)));
+  });
+
+  $$('[data-play]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      playIndex(Number(button.dataset.play));
+    });
+  });
+
+  hydrateArtwork();
+};
+
+const updatePlayerUI = () => {
+  const track = state.current;
+  $('#queueCount').textContent = state.queue.length;
+  $('#playButton').textContent = state.playing ? '❚❚' : '▶';
+
+  if (!track) return;
+
+  $('#miniTitle').textContent = track.name;
+  $('#miniArtist').textContent = track.artist.join(', ');
+  $('#nowTitle').textContent = track.name;
+  $('#nowArtist').textContent = track.artist.join(', ');
+  $('#nowSource').textContent = providerName(track.source);
+  $('#nowSourceIcon').textContent = providerShort(track.source);
+
+  setArtwork($('#miniArt'), track, 220);
+  setArtwork($('#nowArt'), track, 1000);
+
+  renderTracks();
+};
+
+const loadLyrics = async track => {
+  $('#lyricsStatus').textContent = 'Loading';
+  $('#lyrics').textContent = 'Fetching lyrics…';
+
+  try {
+    const response = await fetch(lyricsUrl(track));
+    const data = await response.json();
+
+    const plain = (data.lyric || '')
+      .replace(/^\[[^\]]+\]\s*/gm, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .slice(0, 18)
+      .join('\n');
+
+    $('#lyrics').textContent = plain || 'Lyrics are unavailable for this track.';
+    $('#lyricsStatus').textContent = plain ? 'Synced' : 'Unavailable';
+  } catch {
+    $('#lyrics').textContent = 'Lyrics are unavailable for this track.';
+    $('#lyricsStatus').textContent = 'Unavailable';
+  }
+};
+
+const startCurrentSource = async () => {
+  const track = state.current;
+  if (!track?.source) return;
+
+  speedText.textContent = `Resolving ${providerName(track.source)}…`;
+  audio.src = streamUrl(track);
+
+  try {
+    await audio.play();
+    speedText.textContent = providerName(track.source);
+  } catch {
+    await tryNextSource();
+  }
+};
+
+const tryNextSource = async () => {
+  const track = state.current;
+  if (!track) return;
+
+  state.failedSources.add(track.source);
+  const nextSource = orderedSources(track).find(source => !state.failedSources.has(source));
+
+  if (!nextSource) {
+    state.playing = false;
+    speedText.textContent = 'No playable source';
+    updatePlayerUI();
+    toast('Every matched source failed for this track.');
+    return;
+  }
+
+  track.source = nextSource;
+  updatePlayerUI();
+  await startCurrentSource();
+};
+
+const playIndex = async index => {
+  const track = state.tracks[index];
+  if (!track) return;
+
+  state.currentIndex = index;
+  state.current = track;
+  state.failedSources = new Set();
+
+  const fastest = orderedSources(track)[0];
+  if (fastest) track.source = fastest;
+
+  state.queue = state.tracks.slice(index + 1);
+  state.playing = true;
+  updatePlayerUI();
+  loadLyrics(track);
+  await startCurrentSource();
+};
+const next = () => {
+  if (!state.tracks.length) return;
+  if (state.shuffle) {
+    playIndex(Math.floor(Math.random() * state.tracks.length));
+    return;
+  }
+  const nextIndex = state.currentIndex >= state.tracks.length - 1 ? 0 : state.currentIndex + 1;
+  playIndex(nextIndex);
+};
+
+const previous = () => {
+  if (audio.currentTime > 4) {
+    audio.currentTime = 0;
+    return;
+  }
+  const previousIndex = state.currentIndex <= 0 ? state.tracks.length - 1 : state.currentIndex - 1;
+  playIndex(previousIndex);
+};
+
+const search = async query => {
+  query = String(query || '').trim();
+  if (!query) return;
+
+  state.query = query;
+  resultsTitle.textContent = `Results for “${query}”`;
+  resultMeta.textContent = '';
+  renderSkeletons();
+  speedText.textContent = 'Searching…';
+
+  const params = new URLSearchParams({ q: query, limit: '10' });
+  if (state.sourceFilter !== 'all') params.set('source', state.sourceFilter);
+
+  const started = performance.now();
+
+  try {
+    const response = await fetch(`/api/search?${params}`);
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Search failed');
+
+    state.tracks = data.tracks || [];
+    for (const provider of data.providers || []) {
+      state.latencies[provider.provider] = provider.elapsedMs;
+    }
+
+    const clientElapsed = Math.round(performance.now() - started);
+    speedText.textContent = `${data.elapsedMs ?? clientElapsed}ms API`;
+    const sourceCount = (data.providers || []).filter(item => item.ok).length;
+    const deezerStatus = data.metadata?.ok ? `Deezer ${data.metadata.elapsedMs}ms` : 'Deezer fallback';
+    resultMeta.textContent = `${state.tracks.length} tracks · ${deezerStatus} · ${sourceCount} playback sources`;
+
+    renderSources();
+    renderTracks();
+    $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    state.tracks = [];
+    tracksEl.innerHTML = '<div class="empty-row">The demo API could not complete this search.</div>';
+    resultMeta.textContent = '';
+    speedText.textContent = 'Search failed';
+    toast(error.message || 'Search failed');
+  }
+};
+
+searchForm.addEventListener('submit', event => {
+  event.preventDefault();
+  search(searchInput.value);
+});
+
+$$('[data-focus-search]').forEach(button => {
+  button.addEventListener('click', () => {
+    searchInput.focus();
+    searchInput.select();
+  });
+});
+
+document.addEventListener('keydown', event => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+
+  if (event.code === 'Space' && document.activeElement !== searchInput) {
+    event.preventDefault();
+    if (!state.current) return;
+    state.playing ? audio.pause() : audio.play();
+  }
+});
+
+$('#playButton').addEventListener('click', () => {
+  if (!state.current && state.tracks.length) return playIndex(0);
+  if (!state.current) return;
+  state.playing ? audio.pause() : audio.play();
+});
+
+$('#nextButton').addEventListener('click', next);
+$('#prevButton').addEventListener('click', previous);
+
+$('#repeatButton').addEventListener('click', event => {
+  state.repeat = !state.repeat;
+  event.currentTarget.classList.toggle('active', state.repeat);
+  audio.loop = state.repeat;
+});
+
+$('#shuffleButton').addEventListener('click', event => {
+  state.shuffle = !state.shuffle;
+  event.currentTarget.classList.toggle('active', state.shuffle);
+});
+
+$('#heartButton').addEventListener('click', event => {
+  event.currentTarget.classList.toggle('active');
+  event.currentTarget.textContent = event.currentTarget.classList.contains('active') ? '♥' : '♡';
+});
+
+$('#surpriseButton').addEventListener('click', () => {
+  const item = quickSearches[Math.floor(Math.random() * quickSearches.length)];
+  searchInput.value = item.query;
+  search(item.query);
+});
+
+audio.addEventListener('play', () => {
+  state.playing = true;
+  updatePlayerUI();
+});
+
+audio.addEventListener('pause', () => {
+  state.playing = false;
+  updatePlayerUI();
+});
+
+audio.addEventListener('error', () => {
+  if (state.current) tryNextSource();
+});
+
+audio.addEventListener('ended', () => {
+  if (!state.repeat) next();
+});
+
+audio.addEventListener('timeupdate', () => {
+  const duration = audio.duration || 0;
+  progress.value = duration ? Math.round((audio.currentTime / duration) * 1000) : 0;
+  $('#currentTime').textContent = formatTime(audio.currentTime);
+  $('#duration').textContent = formatTime(duration);
+});
+
+progress.addEventListener('input', () => {
+  if (!audio.duration) return;
+  audio.currentTime = (Number(progress.value) / 1000) * audio.duration;
+});
+
+volume.addEventListener('input', () => {
+  audio.volume = Number(volume.value);
+});
+
+audio.volume = Number(volume.value);
+
+const bootstrap = async () => {
+  renderSources();
+  renderQuickGrid();
+
+  try {
+    const response = await fetch('/api/health');
+    const data = await response.json();
+    state.appleArtworkConfigured = Boolean(data.appleArtworkConfigured);
+    $('#apiStatus').textContent = data.ok
+      ? `Deezer meta · ${state.appleArtworkConfigured ? 'Apple art' : 'Deezer art fallback'}`
+      : 'Unavailable';
+  } catch {
+    $('#apiStatus').textContent = 'Unavailable';
+  }
+
+  search('The Weeknd');
+};
+
+bootstrap();
