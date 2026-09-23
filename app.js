@@ -26,8 +26,7 @@ const state = {
   shuffle: false,
   playing: false,
   latencies: {},
-  failedSources: new Set(),
-  appleArtworkConfigured: false
+  failedSources: new Set()
 };
 
 const audio = $('#audio');
@@ -69,11 +68,14 @@ const toast = message => {
 const sourceData = (track, source = track?.source) =>
   track?.sources?.[source] || track || {};
 
-const artworkUrl = (track, size = 500) => {
+const artworkUrl = (track, size = 500, source = track?.source) => {
+  const data = sourceData(track, source);
+  const id = data.pic_id || data.id || '';
+  if (!source || !id) return '';
+
   const params = new URLSearchParams({
-    title: track?.name || '',
-    artist: track?.artist?.join(', ') || '',
-    album: track?.album || '',
+    source,
+    id,
     size: String(size)
   });
   return `/api/artwork?${params}`;
@@ -96,36 +98,33 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const apple = artworkUrl(track, size);
-  const fallback = track.artwork || '';
-  const image = new Image();
+  const candidates = [track.source, ...orderedSources(track)]
+    .filter((source, index, list) => source && list.indexOf(source) === index)
+    .filter(source => sourceData(track, source)?.pic_id);
 
-  image.onload = () => {
-    element.style.backgroundImage = `url("${apple}")`;
-    element.classList.remove('placeholder');
-  };
-
-  image.onerror = () => {
-    if (!fallback) {
+  const trySource = index => {
+    const source = candidates[index];
+    if (!source) {
       element.style.backgroundImage = '';
       element.classList.add('placeholder');
       return;
     }
 
-    const fallbackImage = new Image();
-    fallbackImage.onload = () => {
-      element.style.backgroundImage = `url("${fallback}")`;
+    const url = artworkUrl(track, size, source);
+    const image = new Image();
+
+    image.onload = () => {
+      element.style.backgroundImage = `url("${url}")`;
       element.classList.remove('placeholder');
     };
-    fallbackImage.onerror = () => {
-      element.style.backgroundImage = '';
-      element.classList.add('placeholder');
-    };
-    fallbackImage.src = fallback;
+
+    image.onerror = () => trySource(index + 1);
+    image.src = url;
   };
 
-  image.src = apple;
+  trySource(0);
 };
+
 const renderSources = () => {
   const providers = ['all', ...Object.keys(providerMeta)];
   sourceList.innerHTML = providers.map(source => {
@@ -493,9 +492,8 @@ const bootstrap = async () => {
   try {
     const response = await fetch('/api/health');
     const data = await response.json();
-    state.appleArtworkConfigured = Boolean(data.appleArtworkConfigured);
     $('#apiStatus').textContent = data.ok
-      ? `Deezer meta · ${state.appleArtworkConfigured ? 'Apple art' : 'Deezer art fallback'}`
+      ? 'Deezer meta · Meting art'
       : 'Unavailable';
   } catch {
     $('#apiStatus').textContent = 'Unavailable';
