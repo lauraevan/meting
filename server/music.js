@@ -2,6 +2,19 @@ import Meting from '../src/meting.js';
 
 export const PLAYBACK_PROVIDERS = ['netease', 'tencent', 'kugou', 'kuwo'];
 
+const createProvider = source => {
+  const meting = new Meting(source);
+  const cookie = process.env[`METING_${source.toUpperCase()}_COOKIE`];
+  if (cookie) {
+    meting.cookie(cookie);
+    if (source === 'kuwo') {
+      const token = cookie.match(/(?:^|;\s*)kw_token=([^;]+)/)?.[1];
+      if (token) meting.header.csrf = token;
+    }
+  }
+  return meting.format(true);
+};
+
 export const safeParse = (value, fallback = null) => {
   try {
     return JSON.parse(value);
@@ -81,14 +94,13 @@ export const normalizeMetingTrack = (track, provider) => {
   };
 };
 
-export const searchMetingProvider = async (provider, query, limit) => {
+export const searchMetingProvider = async (provider, query, limit, timeoutMs = 2100) => {
   const started = performance.now();
-  const meting = new Meting(provider);
-  meting.format(true);
+  const meting = createProvider(provider);
 
   const raw = await withTimeout(
     meting.search(query, { page: 1, limit }),
-    2100,
+    timeoutMs,
     null
   );
 
@@ -240,8 +252,7 @@ export const resolvePlayback = async (source, id, bitrate = 320) => {
     throw new Error('Unsupported playback provider');
   }
 
-  const meting = new Meting(source);
-  meting.format(true);
+  const meting = createProvider(source);
   const raw = await meting.url(id, bitrate);
   const parsed = safeParse(raw, {});
 
@@ -257,8 +268,7 @@ export const getLyrics = async (source, id) => {
     throw new Error('Unsupported lyrics provider');
   }
 
-  const meting = new Meting(source);
-  meting.format(true);
+  const meting = createProvider(source);
   const raw = await meting.lyric(id);
   return safeParse(raw, { lyric: '', tlyric: '' });
 };
@@ -272,8 +282,7 @@ export const resolveArtwork = async (source, id, size = 900) => {
     throw new Error('Missing artwork ID');
   }
 
-  const meting = new Meting(source);
-  meting.format(true);
+  const meting = createProvider(source);
 
   const requested = clamp(size, 64, 2000, 900);
   const raw = await meting.pic(id, requested);

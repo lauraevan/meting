@@ -17,6 +17,27 @@ Meting is a powerful music API framework designed to accelerate music-related de
 - **🔐 Built-in Encryption** - Platform-specific encryption and signing built-in
 - **⚡ Chain-able API** - Fluent interface design for elegant code
 
+## Vercel player
+
+The player uses Deezer for track metadata only. Audio, artwork, and lyrics come
+from the configured Meting music providers. A search match does not guarantee
+that the provider permits playback of that recording.
+
+For provider access you are authorized to use, configure these optional
+server-side Vercel environment variables:
+
+```text
+METING_NETEASE_COOKIE
+METING_TENCENT_COOKIE
+METING_KUGOU_COOKIE
+METING_KUWO_COOKIE
+```
+
+Never put provider cookies in frontend code or commit them to the repository.
+Kuwo also needs a matching `kw_token` inside its cookie; the API sends that
+value as the CSRF header. An unavailable or restricted provider is shown as
+such in the source list, and playback retries the other matched providers.
+
 ## Requirements
 
 - Node.js >= 12.0.0
