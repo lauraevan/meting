@@ -96,7 +96,7 @@ async function musicExample() {
     
     // Switch platform and search again
     meting.site('tencent');
-    const tencentResult = await meting.search('周杰伦');
+    const tencentResult = await meting.search('Jay Chou');
     console.log('Tencent results:', JSON.parse(tencentResult));
     
   } catch (error) {
