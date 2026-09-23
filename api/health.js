@@ -9,6 +9,6 @@ export default function handler(req, res) {
     version: '0.3.0',
     metadata: 'deezer',
     artwork: 'provider',
-    playbackProviders: [...FULL_SOURCES, ...PLAYBACK_PROVIDERS]
+    playbackProviders: ['youtube', ...FULL_SOURCES, ...PLAYBACK_PROVIDERS]
   });
 }

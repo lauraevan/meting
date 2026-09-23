@@ -20,7 +20,9 @@ Meting is a powerful music API framework designed to accelerate music-related de
 ## Vercel player
 
 The player uses Deezer for track metadata only; it never uses Deezer for audio.
-Audius supplies independent full tracks and artwork through its public API.
+YouTube video results are searchable without a key using public search; set
+`YOUTUBE_API_KEY` server-side for the official YouTube Data API search endpoint.
+Playback uses a visible YouTube embed, not extracted audio URLs.
 Jamendo supplies independent full tracks when `JAMENDO_CLIENT_ID` is set on the
 server. Create a client ID through the Jamendo developer portal before enabling
 that source. Neither catalog is substituted for a similarly titled recording

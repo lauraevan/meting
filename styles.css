@@ -731,6 +731,11 @@ body { background:#08090b; }
 .now-panel-head { height:38px; font-size:13px; }
 .now-panel-head .icon-button { border:0; background:transparent; }
 .now-art-wrap { border-radius:7px; }
+.now-art-wrap:has(.youtube-player.active) { aspect-ratio:4/3; min-height:200px; }
+.youtube-player { display:none; width:100%; height:100%; min-height:200px; }
+.youtube-player.active { display:block; }
+.youtube-player iframe { width:100%; height:100%; min-height:200px; border:0; }
+.now-art-wrap:has(.youtube-player.active) .now-art { display:none; }
 .now-title { font-size:20px; }
 .now-artist { font-size:12px; }
 .now-card,.lyrics-card { background:#17181a; border-radius:8px; }
@@ -762,4 +767,7 @@ body { background:#08090b; }
   .track-row { grid-template-columns:18px 42px minmax(0,1fr) 32px; }
   .track-art { width:40px; height:40px; }
   .player { left:8px; right:8px; bottom:8px; height:68px; border:1px solid var(--line); border-radius:10px; padding:7px 10px; }
+  .now-panel.youtube-active { display:block; position:fixed; z-index:29; top:auto; right:8px; bottom:84px; width:min(92vw,320px); height:auto; padding:0; background:#17181b; border:1px solid var(--line); border-radius:10px; }
+  .now-panel.youtube-active > :not(.now-art-wrap) { display:none; }
+  .now-panel.youtube-active .now-art-wrap { min-height:210px; }
 }

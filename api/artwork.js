@@ -1,17 +1,18 @@
 import { PLAYBACK_PROVIDERS, resolveArtwork } from '../server/music.js';
 import { FULL_SOURCES, resolveFullSource } from '../server/fullSources.js';
+import { youtubeArtwork } from '../server/youtube.js';
 
 export default async function handler(req, res) {
   const source = String(req.query.source || '');
   const id = String(req.query.id || '');
   const size = Number(req.query.size || 900);
 
-  if (![...PLAYBACK_PROVIDERS, ...FULL_SOURCES].includes(source) || !id) {
+  if (!['youtube', ...PLAYBACK_PROVIDERS, ...FULL_SOURCES].includes(source) || !id) {
     return res.status(400).json({ error: 'Invalid source or artwork ID' });
   }
 
   try {
-    const artwork = FULL_SOURCES.includes(source)
+    const artwork = source === 'youtube' ? youtubeArtwork(id) : FULL_SOURCES.includes(source)
       ? await resolveFullSource(source, id, 'artwork') : await resolveArtwork(source, id, size);
     const upstream = await fetch(artwork.url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
