@@ -356,7 +356,7 @@ button, input[type="range"] { -webkit-tap-highlight-color: transparent; }
   min-height:59px;
   padding:6px 10px;
   display:grid;
-  grid-template-columns:27px 43px minmax(0,1.4fr) minmax(0,.8fr) 112px 35px;
+  grid-template-columns:27px 43px minmax(0,1.4fr) minmax(0,.8fr) 35px;
   gap:9px;
   align-items:center;
   border-bottom:1px solid rgba(255,255,255,.045);
@@ -718,7 +718,7 @@ body { background:#08090b; }
 .results-section { margin-top:37px; }
 .result-meta { color:#a0a1a5; font-size:11px; }
 .tracks { border:0; border-radius:0; background:transparent; }
-.track-row { min-height:66px; padding:7px 10px; grid-template-columns:26px 48px minmax(0,1.4fr) minmax(0,.8fr) 82px 34px; border-radius:6px; }
+.track-row { min-height:66px; padding:7px 10px; grid-template-columns:26px 48px minmax(0,1.4fr) minmax(0,.8fr) 34px; border-radius:6px; }
 .track-row:nth-child(even) { background:rgba(255,255,255,.016); }
 .track-row:hover,.track-row.active { background:rgba(255,255,255,.075); }
 .track-art { width:46px; height:46px; border-radius:5px; }

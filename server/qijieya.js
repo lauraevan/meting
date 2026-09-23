@@ -21,6 +21,16 @@ const idFrom = (value, type) => {
   } catch { return ''; }
 };
 
+export const normalizeQijieyaTrack = item => {
+  const id = idFrom(item?.url, 'url');
+  if (!id || !item?.name) return null;
+  return {
+    id, pic_id: idFrom(item.pic, 'pic'),
+    name: String(item.name), artist: [String(item.artist || 'Unknown artist')],
+    album: '', duration: 0
+  };
+};
+
 export async function searchQijieya(query, limit) {
   const started = performance.now();
   const provider = 'qijieya';
@@ -32,16 +42,7 @@ export async function searchQijieya(query, limit) {
     if (!response.ok) throw new Error(`Search returned ${response.status}`);
     const data = await response.json();
     if (!Array.isArray(data)) throw new Error('Unexpected search response');
-    const tracks = data.map(item => {
-      const id = idFrom(item?.url, 'url');
-      if (!id || !item?.name) return null;
-      return {
-        id, url_id: id, lyric_id: id,
-        pic_id: idFrom(item.pic, 'pic'),
-        name: String(item.name), artist: [String(item.artist || 'Unknown artist')],
-        album: '', source: provider
-      };
-    }).filter(Boolean);
+    const tracks = data.map(normalizeQijieyaTrack).filter(Boolean);
     return { provider, ok: tracks.length > 0, elapsedMs: Math.round(performance.now() - started), tracks };
   } catch {
     return { provider, ok: false, elapsedMs: Math.round(performance.now() - started), tracks: [] };

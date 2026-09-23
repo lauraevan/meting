@@ -19,31 +19,14 @@ Meting is a powerful music API framework designed to accelerate music-related de
 
 ## Vercel player
 
-The player uses Deezer for track metadata only; it never uses Deezer for audio.
-YouTube video results are searchable without a key using public search; set
-`YOUTUBE_API_KEY` server-side for the official YouTube Data API search endpoint.
-Playback uses a visible YouTube embed by default. The optional dedicated
-stream service in [`services/music-stream`](services/music-stream/README.md)
-can be enabled with `YOUTUBE_STREAM_ORIGIN` after deploying it to a runtime
-that supports `yt-dlp`; Vercel's Node runtime cannot run the Python script
-shipped by `youtube-dl-exec`. The player falls back to the embed when that
-stream fails. The existing Meting sources provide audio, artwork, and lyrics
-when permitted by those providers. A search match does not guarantee playback.
-
-For provider access you are authorized to use, configure these optional
-server-side Vercel environment variables:
-
-```text
-METING_NETEASE_COOKIE
-METING_TENCENT_COOKIE
-METING_KUGOU_COOKIE
-METING_KUWO_COOKIE
-```
-
-Never put provider cookies in frontend code or commit them to the repository.
-Kuwo also needs a matching `kw_token` inside its cookie; the API sends that
-value as the CSRF header. An unavailable or restricted provider is shown as
-such in the source list, and playback retries the other matched providers.
+The player and public music endpoints use the approved
+`https://api.qijieya.cn/meting/` endpoint for search, full-track audio,
+artwork, and lyrics. Deezer enriches matching song metadata only. The browser
+calls Meting's own `/api/search`, `/api/stream`, `/api/artwork`, and
+`/api/lyrics` endpoints; audio streams through the server with byte ranges.
+The compatible `/api?type=search&id=...` endpoint also returns local media
+paths. The upstream service can occasionally return no search results or an
+unavailable stream, which the API reports directly.
 
 ## Requirements
 

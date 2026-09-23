@@ -1,15 +1,6 @@
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-const providerMeta = {
-  qijieya: { name: 'Meting Music', short: 'MM' },
-  youtube: { name: 'YouTube Music', short: 'YT' },
-  netease: { name: 'NetEase', short: 'NE' },
-  tencent: { name: 'Tencent', short: 'QQ' },
-  kugou: { name: 'KuGou', short: 'KG' },
-  kuwo: { name: 'Kuwo', short: 'KW' }
-};
-
 const quickSearches = [
   { title: 'The Weeknd', query: 'The Weeknd Blinding Lights', copy: 'Blinding Lights · After Hours' },
   { title: 'Hans Zimmer', query: 'Hans Zimmer Interstellar', copy: 'Interstellar · Dune' },
@@ -25,69 +16,19 @@ const state = {
   queue: [],
   currentIndex: -1,
   current: null,
-  sourceFilter: 'all',
   repeat: false,
   shuffle: false,
   playing: false,
-  latencies: {},
-  providerHealth: {},
-  availableProviders: ['qijieya', 'netease', 'tencent', 'kugou', 'kuwo', 'youtube'],
-  youtubeStreamBackend: false,
-  failedSources: new Set(),
-  likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
+  likedTracks: (JSON.parse(localStorage.getItem('meting:liked') || '[]'))
+    .filter(track => /^\d+$/.test(String(track.id)) && !track.source),
   searchRequest: 0,
   playbackRequest: 0
 };
 
 const audio = $('#audio');
-let youtubePlayer = null;
-let youtubeReady = null;
-let youtubeVideoId = '';
-const usingYouTube = () => state.current?.source === 'youtube';
-const youtubeVideoMode = () => usingYouTube() && !state.youtubeStreamBackend;
-const youtubeId = track => track?.sources?.youtube?.id || '';
-
-const loadYouTube = () => {
-  if (youtubeReady) return youtubeReady;
-  youtubeReady = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('YouTube player could not load')), 10000);
-    window.onYouTubeIframeAPIReady = () => {
-      clearTimeout(timer);
-      youtubePlayer = new window.YT.Player('youtubePlayer', {
-        width: '320', height: '240', playerVars: { playsinline: 1, origin: location.origin },
-        events: {
-          onReady: () => resolve(youtubePlayer),
-          onStateChange: event => {
-            if (!youtubeVideoMode()) return;
-            state.playing = event.data === window.YT.PlayerState.PLAYING;
-            if (event.data === window.YT.PlayerState.ENDED) {
-              state.repeat ? youtubePlayer.seekTo(0, true) : next();
-              if (state.repeat) youtubePlayer.playVideo();
-            }
-            updatePlayerUI();
-          },
-          onError: () => { if (youtubeVideoMode()) tryNextSource(state.playbackRequest); },
-          onAutoplayBlocked: () => {
-            if (youtubeVideoMode()) {
-              state.playing = false;
-              updatePlayerUI();
-              speedText.textContent = 'Tap the video to play';
-            }
-          }
-        }
-      });
-    };
-    const script = document.createElement('script');
-    script.src = 'https://www.youtube.com/iframe_api';
-    script.onerror = () => { clearTimeout(timer); reject(new Error('YouTube player could not load')); };
-    document.head.append(script);
-  }).catch(error => { youtubeReady = null; throw error; });
-  return youtubeReady;
-};
 
 const togglePlayback = () => {
   if (!state.current) return;
-  if (youtubeVideoMode()) return state.playing ? youtubePlayer?.pauseVideo() : youtubePlayer?.playVideo();
   return state.playing ? audio.pause() : audio.play();
 };
 const searchForm = $('#searchForm');
@@ -96,7 +37,6 @@ const tracksEl = $('#tracks');
 const resultMeta = $('#resultMeta');
 const resultsTitle = $('#resultsTitle');
 const speedText = $('#speedText');
-const sourceList = $('#sourceList');
 const progress = $('#progress');
 const volume = $('#volume');
 const queuePopover = $('#queuePopover');
@@ -110,8 +50,6 @@ const escapeHtml = value => String(value ?? '')
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
 
-const providerName = source => providerMeta[source]?.name || source || 'Unknown';
-const providerShort = source => providerMeta[source]?.short || 'M';
 
 const formatTime = value => {
   if (!Number.isFinite(value) || value < 0) return '0:00';
@@ -128,64 +66,23 @@ const toast = message => {
   toast.timer = setTimeout(() => el.classList.remove('show'), 2200);
 };
 
-const sourceData = (track, source = track?.source) =>
-  track?.sources?.[source] || track || {};
-
-const artworkUrl = (track, size = 500, source = track?.source) => {
-  const data = sourceData(track, source);
-  const id = data.pic_id || data.id || '';
-  if (!source || !id) return '';
-
-  const params = new URLSearchParams({
-    source,
-    id,
-    size: String(size)
-  });
-  return `/api/artwork?${params}`;
-};
-
-const orderedSources = track =>
-  Object.keys(track?.sources || {})
-    .sort((a, b) => (a === 'qijieya' ? -1 : 0) - (b === 'qijieya' ? -1 : 0) || (state.latencies[a] ?? 99999) - (state.latencies[b] ?? 99999));
-
-const streamUrl = (track, source = track.source) => {
-  const data = sourceData(track, source);
-  return `/api/stream?source=${encodeURIComponent(source)}&id=${encodeURIComponent(data.url_id || data.id || '')}&br=320`;
-};
-
-const lyricsUrl = track => {
-  const data = sourceData(track);
-  return `/api/lyrics?source=${encodeURIComponent(track.source)}&id=${encodeURIComponent(data.lyric_id || data.id || '')}`;
-};
+const artworkUrl = (track, size = 500) =>
+  track.pic_id ? `/api/artwork?id=${encodeURIComponent(track.pic_id)}&size=${size}` : '';
+const streamUrl = track => `/api/stream?id=${encodeURIComponent(track.id)}&br=320`;
+const lyricsUrl = track => `/api/lyrics?id=${encodeURIComponent(track.id)}`;
 
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = [track.source, 'qijieya', 'youtube', 'netease', 'tencent', 'kugou', 'kuwo']
-    .filter((source, index, list) => source && list.indexOf(source) === index)
-    .filter(source => track.sources?.[source]?.pic_id);
-
-  const trySource = index => {
-    const source = candidates[index];
-    if (!source) {
-      element.style.backgroundImage = '';
-      element.classList.add('placeholder');
-      return;
-    }
-
-    const url = artworkUrl(track, size, source);
-    const image = new Image();
-
-    image.onload = () => {
-      element.style.backgroundImage = `url("${url}")`;
-      element.classList.remove('placeholder');
-    };
-
-    image.onerror = () => trySource(index + 1);
-    image.src = url;
+  const url = artworkUrl(track, size);
+  if (!url) { element.style.backgroundImage = ''; element.classList.add('placeholder'); return; }
+  const image = new Image();
+  image.onload = () => {
+    element.style.backgroundImage = `url("${url}")`;
+    element.classList.remove('placeholder');
   };
-
-  trySource(0);
+  image.onerror = () => { element.style.backgroundImage = ''; element.classList.add('placeholder'); };
+  image.src = url;
 };
 
 
@@ -237,7 +134,7 @@ const showHome = () => {
   if (state.searchTracks.length) {
     state.tracks = [...state.searchTracks];
     resultsTitle.textContent = `Results for “${state.query}”`;
-    resultsSubtitle.textContent = 'From available music sources';
+    resultsSubtitle.textContent = 'Music to play';
     resultMeta.textContent = `${state.tracks.length} tracks`;
     renderTracks();
   }
@@ -272,37 +169,6 @@ const showRecent = () => {
   $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-const renderSources = () => {
-  const providers = ['all', ...state.availableProviders];
-  sourceList.innerHTML = providers.map(source => {
-    const active = state.sourceFilter === source ? 'active' : '';
-    const label = source === 'all' ? 'All sources' : providerMeta[source].name;
-    const health = state.providerHealth[source];
-    const latency = source === 'all' ? ''
-      : health && !health.ok ? 'Unavailable'
-      : health && !health.count ? 'No results'
-      : state.latencies[source] != null ? `${state.latencies[source]}ms` : '—';
-
-    return `
-      <button class="source-row ${active}" data-source="${source}">
-        <span class="source-left">
-          <span class="source-bullet"></span>
-          <span>${escapeHtml(label)}</span>
-        </span>
-        <span class="source-latency">${latency}</span>
-      </button>
-    `;
-  }).join('');
-
-  $$('.source-row').forEach(button => {
-    button.addEventListener('click', () => {
-      state.sourceFilter = button.dataset.source;
-      renderSources();
-      if (state.query) search(state.query);
-    });
-  });
-};
-
 const renderQuickGrid = () => {
   $('#quickGrid').innerHTML = quickSearches.map((item, index) => `
     <button class="quick-card" data-query="${escapeHtml(item.query)}">
@@ -330,7 +196,6 @@ const renderSkeletons = () => {
         <div class="skeleton" style="height:8px;width:42%;border-radius:5px;margin-top:7px"></div>
       </div>
       <div class="skeleton" style="height:9px;width:64%;border-radius:5px"></div>
-      <div class="skeleton" style="height:22px;width:62px;border-radius:999px"></div>
       <div></div>
     </div>
   `).join('');
@@ -344,7 +209,7 @@ const hydrateArtwork = () => {
 };
 const renderTracks = () => {
   if (!state.tracks.length) {
-    tracksEl.innerHTML = '<div class="empty-row">No matching tracks came back from the active sources.</div>';
+    tracksEl.innerHTML = '<div class="empty-row">No tracks found. Try another song or artist.</div>';
     return;
   }
 
@@ -359,7 +224,6 @@ const renderTracks = () => {
           <span>${escapeHtml(track.artist.join(', '))}</span>
         </div>
         <div class="track-album">${escapeHtml(track.album || 'Single')}</div>
-        <div class="provider-chip">${escapeHtml(providerName(track.source))}</div>
         <button class="track-action" data-play="${index}" aria-label="Play">▶</button>
       </div>
     `;
@@ -390,12 +254,6 @@ const updatePlayerUI = () => {
   $('#miniArtist').textContent = track.artist.join(', ');
   $('#nowTitle').textContent = track.name;
   $('#nowArtist').textContent = track.artist.join(', ');
-  $('#nowSource').textContent = providerName(track.source);
-  $('#nowSourceIcon').textContent = providerShort(track.source);
-  $('#nowQuality').textContent = 'Automatic source selection';
-  $('#nowQuality').textContent = youtubeVideoMode() ? 'YouTube video playback' : usingYouTube() ? 'Full track stream' : 'Automatic source selection';
-  $('.now-panel').classList.toggle('youtube-active', youtubeVideoMode());
-  $('#youtubePlayer').classList.toggle('active', youtubeVideoMode());
   $('#heartButton').classList.toggle('active', isLiked(track));
   $('#heartButton').textContent = isLiked(track) ? '♥' : '♡';
 
@@ -432,58 +290,23 @@ const loadLyrics = async track => {
 
 const startCurrentSource = async (request = state.playbackRequest) => {
   const track = state.current;
-  if (!track?.source || request !== state.playbackRequest) return;
-
-  speedText.textContent = `Resolving ${providerName(track.source)}…`;
-  if (youtubeVideoMode()) {
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-    try {
-      const player = await loadYouTube();
-      if (request !== state.playbackRequest) return;
-      const id = youtubeId(track);
-      if (!/^[A-Za-z0-9_-]{11}$/.test(id)) throw new Error('Invalid YouTube video ID');
-      youtubeVideoId = id;
-      player.loadVideoById(id);
-      player.setVolume(Math.round(Number(volume.value) * 100));
-      speedText.textContent = 'YouTube Music';
-    } catch (error) {
-      if (request === state.playbackRequest) { toast(error.message); await tryNextSource(request); }
-    }
-    return;
-  }
-  if (youtubePlayer && youtubeVideoId) { youtubePlayer.stopVideo(); youtubeVideoId = ''; }
+  if (!track || request !== state.playbackRequest) return;
+  speedText.textContent = 'Loading track…';
   audio.src = streamUrl(track);
 
   try {
     await audio.play();
-    if (request === state.playbackRequest) speedText.textContent = providerName(track.source);
+    if (request === state.playbackRequest) speedText.textContent = 'Playing';
   } catch {
-    if (request === state.playbackRequest) await tryNextSource(request);
+    if (request === state.playbackRequest) playbackFailed();
   }
 };
 
-const tryNextSource = async (request = state.playbackRequest) => {
-  if (request !== state.playbackRequest) return;
-  const track = state.current;
-  if (!track) return;
-
-  state.failedSources.add(track.source);
-  const nextSource = orderedSources(track).find(source => !state.failedSources.has(source));
-
-  if (!nextSource) {
-    state.playing = false;
-    speedText.textContent = 'No playable source';
-    updatePlayerUI();
-    toast('This track is unavailable from the current sources.');
-    return;
-  }
-
-  track.source = nextSource;
-  state.playbackRequest += 1;
+const playbackFailed = () => {
+  state.playing = false;
+  speedText.textContent = 'Track unavailable';
   updatePlayerUI();
-  await startCurrentSource(state.playbackRequest);
+  toast('This track is unavailable right now.');
 };
 
 const playIndex = async index => {
@@ -493,11 +316,7 @@ const playIndex = async index => {
   state.currentIndex = index;
   state.current = track;
   state.recentTracks = [track, ...state.recentTracks.filter(item => item.id !== track.id)].slice(0, 30);
-  state.failedSources = new Set();
   state.playbackRequest += 1;
-
-  const fastest = orderedSources(track)[0];
-  if (fastest) track.source = fastest;
 
   state.queue = state.tracks.slice(index + 1);
   state.playing = true;
@@ -516,10 +335,9 @@ const next = () => {
 };
 
 const previous = () => {
-  const elapsed = youtubeVideoMode() ? youtubePlayer?.getCurrentTime() || 0 : audio.currentTime;
+  const elapsed = audio.currentTime;
   if (elapsed > 4) {
-    if (youtubeVideoMode()) youtubePlayer?.seekTo(0, true);
-    else audio.currentTime = 0;
+    audio.currentTime = 0;
     return;
   }
   const previousIndex = state.currentIndex <= 0 ? state.tracks.length - 1 : state.currentIndex - 1;
@@ -537,7 +355,6 @@ const search = async (query, { scroll = true } = {}) => {
   speedText.textContent = 'Searching…';
 
   const params = new URLSearchParams({ q: query, limit: '10' });
-  if (state.sourceFilter !== 'all') params.set('source', state.sourceFilter);
 
   const started = performance.now();
   const request = ++state.searchRequest;
@@ -551,18 +368,12 @@ const search = async (query, { scroll = true } = {}) => {
 
     state.tracks = data.tracks || [];
     state.searchTracks = [...state.tracks];
-    resultsSubtitle.textContent = 'From available music sources';
-    for (const provider of data.providers || []) {
-      state.latencies[provider.provider] = provider.elapsedMs;
-      state.providerHealth[provider.provider] = provider;
-    }
+    resultsSubtitle.textContent = 'Music to play';
 
     const clientElapsed = Math.round(performance.now() - started);
     speedText.textContent = `${clientElapsed}ms API`;
-    const sourceCount = (data.providers || []).filter(item => item.ok && item.count > 0).length;
-    resultMeta.textContent = `${state.tracks.length} tracks · ${sourceCount} sources`;
+    resultMeta.textContent = `${state.tracks.length} tracks`;
 
-    renderSources();
     renderTracks();
     if (scroll) $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -692,16 +503,7 @@ audio.addEventListener('pause', () => {
 
 audio.addEventListener('error', () => {
   if (!state.current) return;
-  if (youtubeVideoMode()) return;
-  const source = new URL(audio.currentSrc || audio.src, location.href).searchParams.get('source');
-  if (source === 'youtube' && state.youtubeStreamBackend && usingYouTube()) {
-    state.youtubeStreamBackend = false;
-    state.playbackRequest += 1;
-    updatePlayerUI();
-    startCurrentSource(state.playbackRequest);
-    return;
-  }
-  if (!source || source === state.current.source) tryNextSource(state.playbackRequest);
+  playbackFailed();
 });
 
 audio.addEventListener('ended', () => {
@@ -716,43 +518,23 @@ audio.addEventListener('timeupdate', () => {
 });
 
 progress.addEventListener('input', () => {
-  if (youtubeVideoMode()) {
-    const duration = youtubePlayer?.getDuration() || 0;
-    if (duration) youtubePlayer.seekTo((Number(progress.value) / 1000) * duration, true);
-    return;
-  }
   if (!audio.duration) return;
   audio.currentTime = (Number(progress.value) / 1000) * audio.duration;
 });
 
 volume.addEventListener('input', () => {
   audio.volume = Number(volume.value);
-  youtubePlayer?.setVolume(Math.round(Number(volume.value) * 100));
 });
 
 audio.volume = Number(volume.value);
-setInterval(() => {
-  if (!youtubeVideoMode() || !youtubePlayer?.getCurrentTime) return;
-  const duration = youtubePlayer.getDuration() || state.current?.duration || 0;
-  const current = youtubePlayer.getCurrentTime() || 0;
-  progress.value = duration ? Math.round((current / duration) * 1000) : 0;
-  $('#currentTime').textContent = formatTime(current);
-  $('#duration').textContent = formatTime(duration);
-}, 500);
 
 const bootstrap = async () => {
-  renderSources();
   renderQuickGrid();
   renderQueue();
 
   try {
     const response = await fetch('/api/health');
     const data = await response.json();
-    if (Array.isArray(data.playbackProviders)) {
-      state.availableProviders = data.playbackProviders.filter(source => providerMeta[source]);
-      renderSources();
-    }
-    state.youtubeStreamBackend = Boolean(data.youtubeStreamBackend);
     $('#apiStatus').textContent = response.ok && data.ok
       ? 'Service online'
       : 'Unavailable';

@@ -1,93 +1,53 @@
-/**
- * Vercel Serverless Function: exposes the Meting API over HTTP
- *
- * GET /api?server=netease&type=search&id=keyword
- *
- * Parameters:
- *   server  Platform: netease / tencent / kugou / baidu / kuwo (default netease)
- *   type    search / song / album / artist / playlist / url / lyric / pic
- *   id      Keyword (search) or resource ID
- *   page    Search page number (default 1)
- *   limit   Search results per page (default 30) / artist item count (default 50)
- *   br      Bitrate in kbps for url (default 320)
- *   size    Image size for pic (default 300)
- *   format  Normalize data; pass 0 / false to disable (enabled by default)
- */
+import { normalizeQijieyaTrack, qijieyaUrl, searchQijieya, validQijieyaId } from '../server/qijieya.js';
+import stream from './stream.js';
+import artwork from './artwork.js';
+import lyrics from './lyrics.js';
 
-import Meting from '../src/meting.js';
-
-const TYPES = ['search', 'song', 'album', 'artist', 'playlist', 'url', 'lyric', 'pic'];
-
-function toInt(value, fallback) {
-  const n = parseInt(value, 10);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
-
-function send(res, status, body, cache = 'no-store') {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', cache);
-  res.end(typeof body === 'string' ? body : JSON.stringify(body));
-}
+const publicTrack = track => ({
+  name: track.name,
+  artist: track.artist.join(', '),
+  url: `/api/stream?id=${encodeURIComponent(track.id)}`,
+  pic: track.pic_id ? `/api/artwork?id=${encodeURIComponent(track.pic_id)}` : '',
+  lrc: `/api/lyrics?id=${encodeURIComponent(track.id)}`
+});
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.statusCode = 204;
-    return res.end();
+    res.setHeader('Allow', 'GET, OPTIONS');
+    return res.status(204).end();
   }
-
-  const query = new URL(req.url, 'http://localhost').searchParams;
-  const server = query.get('server') || 'netease';
-  const type = query.get('type') || 'search';
-  const id = query.get('id');
-
-  if (!Meting.isSupported(server)) {
-    return send(res, 400, { error: `Unsupported server: ${server}`, servers: Meting.getSupportedPlatforms() });
-  }
-  if (!TYPES.includes(type)) {
-    return send(res, 400, { error: `Unsupported type: ${type}`, types: TYPES });
-  }
-  if (!id) {
-    return send(res, 400, { error: 'Missing required parameter: id' });
-  }
-
-  const meting = new Meting(server);
-  const format = query.get('format');
-  meting.format(!(format === '0' || format === 'false'));
-
+  if (req.method && req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const query = req.query || Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
+  const type = String(query.type || 'search');
+  const id = String(query.id || '').trim();
+  if (query.server && query.server !== 'netease') return res.status(400).json({ error: 'Unsupported server' });
+  if (!id) return res.status(400).json({ error: 'Missing id' });
+  req.query = query;
+  if (type === 'url') return stream(req, res);
+  if (type === 'pic') return artwork(req, res);
+  if (type === 'lrc' || type === 'lyric') return lyrics(req, res);
+  if (!['search', 'song', 'playlist', 'name', 'artist'].includes(type))
+    return res.status(400).json({ error: 'Unsupported type' });
+  if (type !== 'search' && !validQijieyaId(id)) return res.status(400).json({ error: 'Invalid id' });
   try {
-    let result;
-    switch (type) {
-      case 'search':
-        result = await meting.search(id, {
-          page: toInt(query.get('page'), 1),
-          limit: toInt(query.get('limit'), 30)
-        });
-        break;
-      case 'artist':
-        result = await meting.artist(id, toInt(query.get('limit'), 50));
-        break;
-      case 'url':
-        result = await meting.url(id, toInt(query.get('br'), 320));
-        break;
-      case 'pic':
-        result = await meting.pic(id, toInt(query.get('size'), 300));
-        break;
-      default:
-        result = await meting[type](id);
+    if (type === 'search') {
+      const limit = Math.min(30, Math.max(1, parseInt(query.limit, 10) || 12));
+      const result = await searchQijieya(id.slice(0, 120), limit);
+      if (!result.ok) throw new Error('Search unavailable');
+      res.setHeader('Cache-Control', 'public, s-maxage=60');
+      return res.status(200).json(result.tracks.map(publicTrack));
     }
-
-    if (meting.error) {
-      return send(res, 502, { error: meting.error, message: meting.status });
+    const upstream = await fetch(qijieyaUrl(type, id), { signal: AbortSignal.timeout(11000) });
+    if (!upstream.ok) throw new Error('Catalog unavailable');
+    if (type === 'name' || type === 'artist') {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      return res.status(200).send(await upstream.text());
     }
-
-    // Playback URLs expire, so never cache them; cache everything else for 10 minutes
-    const cache = type === 'url' ? 'no-store' : 's-maxage=600, stale-while-revalidate=3600';
-    return send(res, 200, result, cache);
-  } catch (err) {
-    return send(res, 500, { error: err.name || 'Error', message: err.message });
+    const data = await upstream.json();
+    if (!Array.isArray(data)) throw new Error('Catalog unavailable');
+    res.setHeader('Cache-Control', 'public, s-maxage=60');
+    return res.status(200).json(data.map(normalizeQijieyaTrack).filter(Boolean).map(publicTrack));
+  } catch {
+    return res.status(503).json({ error: 'Catalog temporarily unavailable' });
   }
 }

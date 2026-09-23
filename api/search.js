@@ -1,97 +1,53 @@
-import {
-  PLAYBACK_PROVIDERS,
-  clamp,
-  mergeDeezerWithSources,
-  searchDeezer,
-  searchMetingProvider
-} from '../server/music.js';
-import { searchYouTube } from '../server/youtube.js';
+import { clamp, matchScore, searchDeezer } from '../server/music.js';
 import { searchQijieya } from '../server/qijieya.js';
 
-// Warm serverless instances can reuse normalized search results and share
-// identical concurrent requests. Vercel's CDN handles cross-instance hits.
 const cache = new Map();
-const MAX_ENTRIES = 100;
-const TTL_MS = 5 * 60 * 1000;
-
-const getSearch = (key, run) => {
-  const cached = cache.get(key);
-  if (cached && cached.expires > Date.now()) return cached.value;
-  if (cached) cache.delete(key);
-
-  const value = run().then(result => {
-    cache.set(key, { value: Promise.resolve(result), expires: Date.now() + TTL_MS });
-    return result;
-  }).catch(error => {
-    cache.delete(key);
-    throw error;
-  });
-
-  cache.set(key, { value, expires: Date.now() + TTL_MS });
-  if (cache.size > MAX_ENTRIES) cache.delete(cache.keys().next().value);
-  return value;
-};
+const TTL = 5 * 60 * 1000;
 
 export default async function handler(req, res) {
-  const query = String(req.query.q || '').trim();
-  const limit = clamp(req.query.limit, 1, 30, 12);
-  const requestedSource = String(req.query.source || '').trim();
+  const query = String(req.query.q || '').trim().slice(0, 120);
+  const limit = Math.floor(clamp(req.query.limit, 1, 30, 12));
+  if (!query) return res.status(400).json({ error: 'Missing search query' });
+  if (req.query.source) return res.status(400).json({ error: 'Source selection is unavailable' });
 
-  if (!query) {
-    return res.status(400).json({ error: 'Missing search query' });
+  const key = `${query.toLowerCase()}|${limit}`;
+  let entry = cache.get(key);
+  const stale = entry && entry.expires + 30 * 60 * 1000 > Date.now() ? entry : null;
+  if (!entry || entry.expires < Date.now()) {
+    const value = (async () => {
+      const started = performance.now();
+      const [music, metadata] = await Promise.all([
+        searchQijieya(query, limit),
+        searchDeezer(query, Math.max(limit * 2, 20)).catch(() => ({ tracks: [] }))
+      ]);
+      if (!music.ok) throw new Error('Music search is temporarily unavailable');
+      const tracks = music.tracks.map(track => {
+        const best = (metadata.tracks || []).map(item => ({ item, score: matchScore(track, item) }))
+          .sort((a, b) => b.score - a.score)[0];
+        if (!best || best.score < 0.9) return track;
+        return { ...track, album: best.item.album, duration: best.item.duration,
+          explicit: best.item.explicit };
+      });
+      return { query, elapsedMs: Math.round(performance.now() - started), tracks };
+    })();
+    entry = { value, expires: Date.now() + TTL };
+    cache.set(key, entry);
+    value.catch(() => { if (cache.get(key) === entry) cache.delete(key); });
+    if (cache.size > 100) cache.delete(cache.keys().next().value);
   }
-
-  if (requestedSource && !['qijieya', 'youtube', ...PLAYBACK_PROVIDERS].includes(requestedSource)) {
-    return res.status(400).json({ error: 'Unknown source' });
-  }
-  const providers = requestedSource ? [requestedSource] : ['qijieya', ...PLAYBACK_PROVIDERS];
-
-  const key = `${query.toLowerCase()}|${limit}|${providers.join(',')}`;
 
   try {
-    const result = await getSearch(key, async () => {
-      const started = performance.now();
-
-      const metingProviders = providers.filter(provider => PLAYBACK_PROVIDERS.includes(provider));
-      const [deezer, metingResults, youtubeResult, approvedResult] = await Promise.all([
-    (!metingProviders.length ? Promise.resolve({ ok: false, elapsedMs: null, tracks: [] }) : searchDeezer(query, Math.max(limit * 2, 20))).catch(() => ({
-      ok: false,
-      elapsedMs: null,
-      tracks: []
-    })),
-    Promise.all(
-      metingProviders.map(provider =>
-        searchMetingProvider(provider, query, Math.max(limit, 12), requestedSource ? 3500 : 2100).catch(() => ({
-          provider,
-          ok: false,
-          elapsedMs: null,
-          tracks: []
-        }))
-      )
-    ),
-    providers.includes('youtube') ? searchYouTube(query, Math.max(limit, 12)) : Promise.resolve(null),
-    providers.includes('qijieya') ? searchQijieya(query, Math.max(limit, 12)) : Promise.resolve(null)
-      ]);
-
-      const providerResults = [...(approvedResult ? [approvedResult] : []), ...(youtubeResult ? [youtubeResult] : []), ...metingResults];
-      const metingTracks = mergeDeezerWithSources(deezer.tracks, approvedResult ? [approvedResult, ...metingResults] : metingResults, limit);
-      const tracks = requestedSource === 'youtube' ? youtubeResult.tracks.slice(0, limit) : metingTracks;
-      return {
-        query,
-        elapsedMs: Math.round(performance.now() - started),
-        metadata: { provider: 'deezer', ok: deezer.ok, elapsedMs: deezer.elapsedMs },
-        providers: providerResults.map(({ provider, ok, elapsedMs, tracks }) => ({
-          provider, ok, elapsedMs, count: tracks.length
-        })),
-        tracks
-      };
-    });
-
-    // Do not cache an outage as an empty catalog.
-    if (!result.providers.some(item => item.ok && item.count > 0)) cache.delete(key);
+    const result = await entry.value;
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.status(200).json(result);
-  } catch (error) {
-    return res.status(502).json({ error: error.message || 'Search unavailable' });
+  } catch {
+    if (stale && stale !== entry) {
+      try {
+        const result = await stale.value;
+        res.setHeader('Cache-Control', 'public, s-maxage=30');
+        return res.status(200).json(result);
+      } catch { /* The old lookup failed too. */ }
+    }
+    return res.status(503).json({ error: 'Music search is temporarily unavailable' });
   }
 }
