@@ -1,12 +1,12 @@
 import crypto from 'crypto';
 import BaseProvider from './base.js';
 
-// eapi 相关常量
+// EAPI constants
 const EAPI_KEY = 'e82ckenh8dichen8';
 const EAPI_IV = Buffer.from('0102030405060708');
 
 /**
- * 网易云音乐平台提供者
+ * NetEase Cloud Music provider
  */
 export default class NeteaseProvider extends BaseProvider {
   constructor(meting) {
@@ -15,7 +15,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取网易云音乐的请求头配置（EAPI）
+   * Get NetEase Cloud Music request headers (EAPI)
    */
   getHeaders() {
     const timestamp = Date.now().toString();
@@ -33,7 +33,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 搜索歌曲
+   * Search for songs
    */
   search(keyword, option = {}) {
     return {
@@ -52,7 +52,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌曲详情
+   * Get song details
    */
   song(id) {
     return {
@@ -67,7 +67,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取专辑信息
+   * Get album information
    */
   album(id) {
     return {
@@ -87,7 +87,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取艺术家作品
+   * Get artist works
    */
   artist(id, limit = 50) {
     return {
@@ -105,7 +105,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取播放列表
+   * Get playlist
    */
   playlist(id) {
     return {
@@ -123,7 +123,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取音频播放链接
+   * Get audio playback URL
    */
   url(id, br = 320) {
     return {
@@ -139,7 +139,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌词
+   * Get lyrics
    */
   lyric(id) {
     return {
@@ -158,7 +158,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 获取封面图片
+   * Get cover artwork
    */
   async pic(id, size = 300) {
     const url = `https://p3.music.126.net/${this._encryptId(id)}/${id}.jpg?param=${size}y${size}`;
@@ -166,7 +166,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 格式化网易云音乐数据
+   * Format NetEase Cloud Music data
    */
   format(data) {
     const result = {
@@ -195,7 +195,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 处理网易云音乐的编码逻辑
+   * Handle NetEase Cloud Music encoding
    */
   async handleEncode(api) {
     if (api.encode === 'netease_eapi') {
@@ -205,27 +205,27 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 网易云音乐 EAPI 加密
+   * NetEase Cloud Music EAPI encryption
    */
   async eapiEncrypt(api) {
     const text = JSON.stringify(api.body);
     const url = api.url.replace(/https?:\/\/[^\/]+/, '');
 
-    // 构建 eapi 加密消息
+    // Build the EAPI encryption message
     const message = `nobody${url}use${text}md5forencrypt`;
     const digest = crypto.createHash('md5').update(message).digest('hex');
     const data = `${url}-36cd479b6b5-${text}-36cd479b6b5-${digest}`;
 
-    // AES-128-ECB 加密
+    // AES-128-ECB encryption
     const cipher = crypto.createCipheriv('aes-128-ecb', Buffer.from(EAPI_KEY, 'utf8'), null);
     cipher.setAutoPadding(true);
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    // 转换 URL 路径
+    // Transform URL path
     api.url = api.url.replace('/api/', '/eapi/');
 
-    // 构建 eapi 请求体
+    // Build the EAPI request body
     api.body = {
       params: encrypted.toUpperCase()
     };
@@ -234,7 +234,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 网易云音乐 URL 解码
+   * NetEase Cloud Music URL decoding
    */
   urlDecode(result) {
     const data = JSON.parse(result);
@@ -262,7 +262,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 网易云音乐歌词解码
+   * NetEase Cloud Music lyrics decoding
    */
   lyricDecode(result) {
     const data = JSON.parse(result);
@@ -274,10 +274,10 @@ export default class NeteaseProvider extends BaseProvider {
     return JSON.stringify(lyricData);
   }
 
-  // ========== 私有工具方法 ==========
+  // ========== Private utility methods ==========
 
   /**
-   * 生成随机 IP 地址
+   * Generate a random IP address
    */
   _generateRandomIP() {
     const min = 1884815360; // 112.74.200.0
@@ -293,7 +293,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 生成随机十六进制字符串
+   * Generate a random hexadecimal string
    */
   _getRandomHex(length) {
     return crypto.randomBytes(Math.ceil(length / 2))
@@ -302,17 +302,17 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 生成设备 ID
+   * Generate a device ID
    */
   _generateDeviceId() {
-    // 生成类似移动端的设备 ID
+    // Generate a mobile-style device ID
     const randomBytes = crypto.randomBytes(16);
     const deviceId = randomBytes.toString('hex').toUpperCase();
     return deviceId;
   }
 
   /**
-   * 网易云音乐 ID 加密
+   * NetEase Cloud Music ID encryption
    */
   _encryptId(id) {
     const magic = '3go8&$8*3*3h0k(2)2'.split('');
@@ -334,7 +334,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 大数运算相关工具方法
+   * Big integer utility methods
    */
   _bchexdec(hex) {
     return BigInt('0x' + hex);
@@ -345,7 +345,7 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /**
-   * 大数幂模运算
+   * Modular exponentiation for big integers
    */
   _powMod(base, exponent, modulus) {
     if (modulus === 1n) return 0n;
