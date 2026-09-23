@@ -3,7 +3,6 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 
 const providerMeta = {
   youtube: { name: 'YouTube Music', short: 'YT' },
-  jamendo: { name: 'Jamendo · full tracks', short: 'JA' },
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
   kugou: { name: 'KuGou', short: 'KG' },
@@ -32,6 +31,7 @@ const state = {
   latencies: {},
   providerHealth: {},
   availableProviders: ['youtube', 'netease', 'tencent', 'kugou', 'kuwo'],
+  youtubeStreamBackend: false,
   failedSources: new Set(),
   likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
   searchRequest: 0,
@@ -43,6 +43,7 @@ let youtubePlayer = null;
 let youtubeReady = null;
 let youtubeVideoId = '';
 const usingYouTube = () => state.current?.source === 'youtube';
+const youtubeVideoMode = () => usingYouTube() && !state.youtubeStreamBackend;
 const youtubeId = track => track?.sources?.youtube?.id || '';
 
 const loadYouTube = () => {
@@ -56,7 +57,7 @@ const loadYouTube = () => {
         events: {
           onReady: () => resolve(youtubePlayer),
           onStateChange: event => {
-            if (!usingYouTube()) return;
+            if (!youtubeVideoMode()) return;
             state.playing = event.data === window.YT.PlayerState.PLAYING;
             if (event.data === window.YT.PlayerState.ENDED) {
               state.repeat ? youtubePlayer.seekTo(0, true) : next();
@@ -64,9 +65,9 @@ const loadYouTube = () => {
             }
             updatePlayerUI();
           },
-          onError: () => { if (usingYouTube()) tryNextSource(state.playbackRequest); },
+          onError: () => { if (youtubeVideoMode()) tryNextSource(state.playbackRequest); },
           onAutoplayBlocked: () => {
-            if (usingYouTube()) {
+            if (youtubeVideoMode()) {
               state.playing = false;
               updatePlayerUI();
               speedText.textContent = 'Tap the video to play';
@@ -85,7 +86,7 @@ const loadYouTube = () => {
 
 const togglePlayback = () => {
   if (!state.current) return;
-  if (usingYouTube()) return state.playing ? youtubePlayer?.pauseVideo() : youtubePlayer?.playVideo();
+  if (youtubeVideoMode()) return state.playing ? youtubePlayer?.pauseVideo() : youtubePlayer?.playVideo();
   return state.playing ? audio.pause() : audio.play();
 };
 const searchForm = $('#searchForm');
@@ -159,7 +160,7 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = [track.source, 'youtube', 'jamendo', 'netease', 'tencent', 'kugou', 'kuwo']
+  const candidates = [track.source, 'youtube', 'netease', 'tencent', 'kugou', 'kuwo']
     .filter((source, index, list) => source && list.indexOf(source) === index)
     .filter(source => track.sources?.[source]?.pic_id);
 
@@ -391,9 +392,9 @@ const updatePlayerUI = () => {
   $('#nowSource').textContent = providerName(track.source);
   $('#nowSourceIcon').textContent = providerShort(track.source);
   $('#nowQuality').textContent = 'Automatic source selection';
-  $('#nowQuality').textContent = usingYouTube() ? 'YouTube video playback' : 'Automatic source selection';
-  $('.now-panel').classList.toggle('youtube-active', usingYouTube());
-  $('#youtubePlayer').classList.toggle('active', usingYouTube());
+  $('#nowQuality').textContent = youtubeVideoMode() ? 'YouTube video playback' : usingYouTube() ? 'Full track stream' : 'Automatic source selection';
+  $('.now-panel').classList.toggle('youtube-active', youtubeVideoMode());
+  $('#youtubePlayer').classList.toggle('active', youtubeVideoMode());
   $('#heartButton').classList.toggle('active', isLiked(track));
   $('#heartButton').textContent = isLiked(track) ? '♥' : '♡';
 
@@ -433,7 +434,7 @@ const startCurrentSource = async (request = state.playbackRequest) => {
   if (!track?.source || request !== state.playbackRequest) return;
 
   speedText.textContent = `Resolving ${providerName(track.source)}…`;
-  if (track.source === 'youtube') {
+  if (youtubeVideoMode()) {
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
@@ -514,9 +515,9 @@ const next = () => {
 };
 
 const previous = () => {
-  const elapsed = usingYouTube() ? youtubePlayer?.getCurrentTime() || 0 : audio.currentTime;
+  const elapsed = youtubeVideoMode() ? youtubePlayer?.getCurrentTime() || 0 : audio.currentTime;
   if (elapsed > 4) {
-    if (usingYouTube()) youtubePlayer?.seekTo(0, true);
+    if (youtubeVideoMode()) youtubePlayer?.seekTo(0, true);
     else audio.currentTime = 0;
     return;
   }
@@ -690,7 +691,15 @@ audio.addEventListener('pause', () => {
 
 audio.addEventListener('error', () => {
   if (!state.current) return;
+  if (youtubeVideoMode()) return;
   const source = new URL(audio.currentSrc || audio.src, location.href).searchParams.get('source');
+  if (source === 'youtube' && state.youtubeStreamBackend && usingYouTube()) {
+    state.youtubeStreamBackend = false;
+    state.playbackRequest += 1;
+    updatePlayerUI();
+    startCurrentSource(state.playbackRequest);
+    return;
+  }
   if (!source || source === state.current.source) tryNextSource(state.playbackRequest);
 });
 
@@ -706,7 +715,7 @@ audio.addEventListener('timeupdate', () => {
 });
 
 progress.addEventListener('input', () => {
-  if (usingYouTube()) {
+  if (youtubeVideoMode()) {
     const duration = youtubePlayer?.getDuration() || 0;
     if (duration) youtubePlayer.seekTo((Number(progress.value) / 1000) * duration, true);
     return;
@@ -722,7 +731,7 @@ volume.addEventListener('input', () => {
 
 audio.volume = Number(volume.value);
 setInterval(() => {
-  if (!usingYouTube() || !youtubePlayer?.getCurrentTime) return;
+  if (!youtubeVideoMode() || !youtubePlayer?.getCurrentTime) return;
   const duration = youtubePlayer.getDuration() || state.current?.duration || 0;
   const current = youtubePlayer.getCurrentTime() || 0;
   progress.value = duration ? Math.round((current / duration) * 1000) : 0;
@@ -742,6 +751,7 @@ const bootstrap = async () => {
       state.availableProviders = data.playbackProviders.filter(source => providerMeta[source]);
       renderSources();
     }
+    state.youtubeStreamBackend = Boolean(data.youtubeStreamBackend);
     $('#apiStatus').textContent = response.ok && data.ok
       ? 'Service online'
       : 'Unavailable';

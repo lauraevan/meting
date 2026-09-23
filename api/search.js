@@ -5,7 +5,6 @@ import {
   searchDeezer,
   searchMetingProvider
 } from '../server/music.js';
-import { FULL_SOURCES, searchFullSource } from '../server/fullSources.js';
 import { searchYouTube } from '../server/youtube.js';
 
 // Warm serverless instances can reuse normalized search results and share
@@ -41,10 +40,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing search query' });
   }
 
-  if (requestedSource && !['youtube', ...PLAYBACK_PROVIDERS, ...FULL_SOURCES].includes(requestedSource)) {
+  if (requestedSource && !['youtube', ...PLAYBACK_PROVIDERS].includes(requestedSource)) {
     return res.status(400).json({ error: 'Unknown source' });
   }
-  const providers = requestedSource ? [requestedSource] : ['youtube', ...FULL_SOURCES, ...PLAYBACK_PROVIDERS];
+  const providers = requestedSource ? [requestedSource] : ['youtube', ...PLAYBACK_PROVIDERS];
 
   const key = `${query.toLowerCase()}|${limit}|${providers.join(',')}`;
 
@@ -53,8 +52,7 @@ export default async function handler(req, res) {
       const started = performance.now();
 
       const metingProviders = providers.filter(provider => PLAYBACK_PROVIDERS.includes(provider));
-      const fullProviders = providers.filter(provider => FULL_SOURCES.includes(provider));
-      const [deezer, metingResults, fullResults, youtubeResult] = await Promise.all([
+      const [deezer, metingResults, youtubeResult] = await Promise.all([
     (!metingProviders.length ? Promise.resolve({ ok: false, elapsedMs: null, tracks: [] }) : searchDeezer(query, Math.max(limit * 2, 20))).catch(() => ({
       ok: false,
       elapsedMs: null,
@@ -70,17 +68,14 @@ export default async function handler(req, res) {
         }))
       )
     ),
-    Promise.all(fullProviders.map(provider => searchFullSource(provider, query, Math.max(limit, 12)))),
     providers.includes('youtube') ? searchYouTube(query, Math.max(limit, 12)) : Promise.resolve(null)
       ]);
 
-      const providerResults = [...(youtubeResult ? [youtubeResult] : []), ...fullResults, ...metingResults];
+      const providerResults = [...(youtubeResult ? [youtubeResult] : []), ...metingResults];
       const metingTracks = mergeDeezerWithSources(deezer.tracks, metingResults, limit);
-      const fullTracks = fullResults.flatMap(item => item.tracks);
       // Keep independent recordings distinct; a title match does not prove the same audio.
       const tracks = requestedSource === 'youtube' ? youtubeResult.tracks.slice(0, limit)
-        : requestedSource && FULL_SOURCES.includes(requestedSource) ? fullTracks.slice(0, limit)
-        : requestedSource ? metingTracks : [...fullTracks.slice(0, Math.ceil(limit / 2)), ...metingTracks].slice(0, limit);
+        : metingTracks;
       if (!requestedSource) tracks.unshift(...(youtubeResult?.tracks || []).slice(0, Math.ceil(limit / 2)));
       if (!requestedSource) tracks.length = Math.min(tracks.length, limit);
       return {

@@ -22,11 +22,12 @@ Meting is a powerful music API framework designed to accelerate music-related de
 The player uses Deezer for track metadata only; it never uses Deezer for audio.
 YouTube video results are searchable without a key using public search; set
 `YOUTUBE_API_KEY` server-side for the official YouTube Data API search endpoint.
-Playback uses a visible YouTube embed, not extracted audio URLs.
-Jamendo supplies independent full tracks when `JAMENDO_CLIENT_ID` is set on the
-server. Create a client ID through the Jamendo developer portal before enabling
-that source. Neither catalog is substituted for a similarly titled recording
-from Deezer. The existing Meting sources provide audio, artwork, and lyrics
+Playback uses a visible YouTube embed by default. The optional dedicated
+stream service in [`services/music-stream`](services/music-stream/README.md)
+can be enabled with `YOUTUBE_STREAM_ORIGIN` after deploying it to a runtime
+that supports `yt-dlp`; Vercel's Node runtime cannot run the Python script
+shipped by `youtube-dl-exec`. The player falls back to the embed when that
+stream fails. The existing Meting sources provide audio, artwork, and lyrics
 when permitted by those providers. A search match does not guarantee playback.
 
 For provider access you are authorized to use, configure these optional

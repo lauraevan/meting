@@ -66,7 +66,6 @@
     "rollup": "^4.49.0"
   },
   "dependencies": {
-    "youtube-dl-exec": "^3.1.15",
     "yt-search": "^2.13.1"
   }
 }
