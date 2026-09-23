@@ -1,4 +1,4 @@
-import { clamp, PLAYBACK_PROVIDERS, resolvePlayback } from './_lib.js';
+import { clamp, PLAYBACK_PROVIDERS, resolvePlayback } from '../server/music.js';
 
 export default async function handler(req, res) {
   const source = String(req.query.source || '');
