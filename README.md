@@ -19,9 +19,13 @@ Meting is a powerful music API framework designed to accelerate music-related de
 
 ## Vercel player
 
-The player uses Deezer for track metadata only. Audio, artwork, and lyrics come
-from the configured Meting music providers. A search match does not guarantee
-that the provider permits playback of that recording.
+The player uses Deezer for track metadata only; it never uses Deezer for audio.
+Audius supplies independent full tracks and artwork through its public API.
+Jamendo supplies independent full tracks when `JAMENDO_CLIENT_ID` is set on the
+server. Create a client ID through the Jamendo developer portal before enabling
+that source. Neither catalog is substituted for a similarly titled recording
+from Deezer. The existing Meting sources provide audio, artwork, and lyrics
+when permitted by those providers. A search match does not guarantee playback.
 
 For provider access you are authorized to use, configure these optional
 server-side Vercel environment variables:

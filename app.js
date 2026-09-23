@@ -2,6 +2,8 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 const providerMeta = {
+  audius: { name: 'Audius · full tracks', short: 'AU' },
+  jamendo: { name: 'Jamendo · full tracks', short: 'JA' },
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
   kugou: { name: 'KuGou', short: 'KG' },
@@ -29,6 +31,7 @@ const state = {
   playing: false,
   latencies: {},
   providerHealth: {},
+  availableProviders: ['audius', 'netease', 'tencent', 'kugou', 'kuwo'],
   failedSources: new Set(),
   likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]'),
   searchRequest: 0,
@@ -107,7 +110,7 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = ['netease', 'tencent', 'kugou', 'kuwo']
+  const candidates = [track.source, 'audius', 'jamendo', 'netease', 'tencent', 'kugou', 'kuwo']
     .filter((source, index, list) => source && list.indexOf(source) === index)
     .filter(source => track.sources?.[source]?.pic_id);
 
@@ -219,7 +222,7 @@ const showRecent = () => {
 };
 
 const renderSources = () => {
-  const providers = ['all', 'netease', 'tencent', 'kugou', 'kuwo'];
+  const providers = ['all', ...state.availableProviders];
   sourceList.innerHTML = providers.map(source => {
     const active = state.sourceFilter === source ? 'active' : '';
     const label = source === 'all' ? 'All sources' : providerMeta[source].name;
@@ -648,6 +651,10 @@ const bootstrap = async () => {
   try {
     const response = await fetch('/api/health');
     const data = await response.json();
+    if (Array.isArray(data.playbackProviders)) {
+      state.availableProviders = data.playbackProviders.filter(source => providerMeta[source]);
+      renderSources();
+    }
     $('#apiStatus').textContent = response.ok && data.ok
       ? 'Service online'
       : 'Unavailable';

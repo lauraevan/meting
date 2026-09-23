@@ -5,6 +5,7 @@ import {
   searchDeezer,
   searchMetingProvider
 } from '../server/music.js';
+import { FULL_SOURCES, searchFullSource } from '../server/fullSources.js';
 
 // Warm serverless instances can reuse normalized search results and share
 // identical concurrent requests. Vercel's CDN handles cross-instance hits.
@@ -39,9 +40,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing search query' });
   }
 
-  const providers = requestedSource && PLAYBACK_PROVIDERS.includes(requestedSource)
-    ? [requestedSource]
-    : PLAYBACK_PROVIDERS;
+  if (requestedSource && ![...PLAYBACK_PROVIDERS, ...FULL_SOURCES].includes(requestedSource)) {
+    return res.status(400).json({ error: 'Unknown source' });
+  }
+  const providers = requestedSource ? [requestedSource] : [...FULL_SOURCES, ...PLAYBACK_PROVIDERS];
 
   const key = `${query.toLowerCase()}|${limit}|${providers.join(',')}`;
 
@@ -49,14 +51,16 @@ export default async function handler(req, res) {
     const result = await getSearch(key, async () => {
       const started = performance.now();
 
-      const [deezer, providerResults] = await Promise.all([
-    searchDeezer(query, Math.max(limit * 2, 20)).catch(() => ({
+      const metingProviders = providers.filter(provider => PLAYBACK_PROVIDERS.includes(provider));
+      const fullProviders = providers.filter(provider => FULL_SOURCES.includes(provider));
+      const [deezer, metingResults, fullResults] = await Promise.all([
+    (fullProviders.length && !metingProviders.length ? Promise.resolve({ ok: false, elapsedMs: null, tracks: [] }) : searchDeezer(query, Math.max(limit * 2, 20))).catch(() => ({
       ok: false,
       elapsedMs: null,
       tracks: []
     })),
     Promise.all(
-      providers.map(provider =>
+      metingProviders.map(provider =>
         searchMetingProvider(provider, query, Math.max(limit, 12), requestedSource ? 3500 : 2100).catch(() => ({
           provider,
           ok: false,
@@ -64,10 +68,17 @@ export default async function handler(req, res) {
           tracks: []
         }))
       )
-    )
+    ),
+    Promise.all(fullProviders.map(provider => searchFullSource(provider, query, Math.max(limit, 12))))
       ]);
 
-      const tracks = mergeDeezerWithSources(deezer.tracks, providerResults, limit);
+      const providerResults = [...fullResults, ...metingResults];
+      const metingTracks = mergeDeezerWithSources(deezer.tracks, metingResults, limit);
+      const fullTracks = fullResults.flatMap(item => item.tracks);
+      // Keep independent recordings distinct; a title match does not prove the same audio.
+      const tracks = requestedSource && FULL_SOURCES.includes(requestedSource)
+        ? fullTracks.slice(0, limit)
+        : requestedSource ? metingTracks : [...fullTracks.slice(0, Math.ceil(limit / 2)), ...metingTracks].slice(0, limit);
       return {
         query,
         elapsedMs: Math.round(performance.now() - started),
