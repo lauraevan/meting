@@ -26,7 +26,8 @@ const state = {
   shuffle: false,
   playing: false,
   latencies: {},
-  failedSources: new Set()
+  failedSources: new Set(),
+  likedTracks: JSON.parse(localStorage.getItem('meting:liked') || '[]')
 };
 
 const audio = $('#audio');
@@ -39,6 +40,9 @@ const speedText = $('#speedText');
 const sourceList = $('#sourceList');
 const progress = $('#progress');
 const volume = $('#volume');
+const queuePopover = $('#queuePopover');
+const queueList = $('#queueList');
+const resultsSubtitle = $('#resultsSubtitle');
 
 const escapeHtml = value => String(value ?? '')
   .replaceAll('&', '&amp;')
@@ -123,6 +127,81 @@ const setArtwork = (element, track, size) => {
   };
 
   trySource(0);
+};
+
+
+const isLiked = track =>
+  Boolean(track && state.likedTracks.some(item => item.id === track.id));
+
+const saveLiked = () => {
+  localStorage.setItem('meting:liked', JSON.stringify(state.likedTracks));
+};
+
+const updateFeatured = track => {
+  if (!track) return;
+
+  $('#featuredKicker').textContent = track.album || 'Featured from your search';
+  $('#featuredTitle').textContent = track.name;
+  $('#featuredArtist').textContent = track.artist.join(', ');
+  setArtwork($('#featuredArt'), track, 900);
+  setArtwork($('#featuredBackdrop'), track, 1200);
+};
+
+const renderQueue = () => {
+  $('#queueCount').textContent = state.queue.length;
+  $('#queueMeta').textContent = state.queue.length
+    ? `${state.queue.length} track${state.queue.length === 1 ? '' : 's'}`
+    : 'Nothing queued';
+
+  if (!state.queue.length) {
+    queueList.innerHTML = '<div class="empty-row">Play something and the upcoming tracks will appear here.</div>';
+    return;
+  }
+
+  queueList.innerHTML = state.queue.map((track, index) => `
+    <button class="queue-entry" data-queue-index="${index}">
+      <div class="queue-entry-art placeholder" data-queue-art="${index}"></div>
+      <div>
+        <strong>${escapeHtml(track.name)}</strong>
+        <span>${escapeHtml(track.artist.join(', '))}</span>
+      </div>
+      <div class="queue-index">${String(index + 1).padStart(2, '0')}</div>
+    </button>
+  `).join('');
+
+  $('[data-queue-art]').forEach(el => {
+    setArtwork(el, state.queue[Number(el.dataset.queueArt)], 120);
+  });
+
+  $('[data-queue-index]').forEach(button => {
+    button.addEventListener('click', () => {
+      const track = state.queue[Number(button.dataset.queueIndex)];
+      const index = state.tracks.findIndex(item => item.id === track?.id);
+      if (index >= 0) playIndex(index);
+      queuePopover.classList.remove('show');
+      queuePopover.setAttribute('aria-hidden', 'true');
+    });
+  });
+};
+
+const showHome = () => {
+  $('#content').scrollTo({ top: 0, behavior: 'smooth' });
+  $('.nav-item').forEach(item => item.classList.remove('active'));
+  $('[data-home].nav-item')?.classList.add('active');
+};
+
+const showLibrary = () => {
+  if (!state.likedTracks.length) {
+    toast('Your Liked Songs library is empty.');
+    return;
+  }
+
+  state.tracks = [...state.likedTracks];
+  resultsTitle.textContent = 'Liked Songs';
+  resultsSubtitle.textContent = 'Saved on this device';
+  resultMeta.textContent = `${state.tracks.length} saved`;
+  renderTracks();
+  $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 const renderSources = () => {
@@ -246,11 +325,14 @@ const updatePlayerUI = () => {
   $('#nowArtist').textContent = track.artist.join(', ');
   $('#nowSource').textContent = providerName(track.source);
   $('#nowSourceIcon').textContent = providerShort(track.source);
+  $('#heartButton').classList.toggle('active', isLiked(track));
+  $('#heartButton').textContent = isLiked(track) ? '♥' : '♡';
 
   setArtwork($('#miniArt'), track, 220);
   setArtwork($('#nowArt'), track, 1000);
 
   renderTracks();
+  renderQueue();
 };
 
 const loadLyrics = async track => {
@@ -370,6 +452,8 @@ const search = async query => {
     if (!response.ok) throw new Error(data.error || 'Search failed');
 
     state.tracks = data.tracks || [];
+    if (state.tracks[0]) updateFeatured(state.tracks[0]);
+    resultsSubtitle.textContent = 'Matched across Deezer metadata and live playback sources';
     for (const provider of data.providers || []) {
       state.latencies[provider.provider] = provider.elapsedMs;
     }
@@ -438,15 +522,63 @@ $('#shuffleButton').addEventListener('click', event => {
   event.currentTarget.classList.toggle('active', state.shuffle);
 });
 
-$('#heartButton').addEventListener('click', event => {
-  event.currentTarget.classList.toggle('active');
-  event.currentTarget.textContent = event.currentTarget.classList.contains('active') ? '♥' : '♡';
+$('#heartButton').addEventListener('click', () => {
+  const track = state.current;
+  if (!track) return;
+
+  const index = state.likedTracks.findIndex(item => item.id === track.id);
+  if (index >= 0) {
+    state.likedTracks.splice(index, 1);
+    toast('Removed from Liked Songs');
+  } else {
+    state.likedTracks.unshift(JSON.parse(JSON.stringify(track)));
+    toast('Added to Liked Songs');
+  }
+
+  saveLiked();
+  updatePlayerUI();
 });
 
 $('#surpriseButton').addEventListener('click', () => {
   const item = quickSearches[Math.floor(Math.random() * quickSearches.length)];
   searchInput.value = item.query;
   search(item.query);
+});
+
+
+$('#featuredPlayButton').addEventListener('click', () => {
+  if (state.tracks.length) playIndex(0);
+});
+
+$('[data-home]').forEach(button => {
+  button.addEventListener('click', showHome);
+});
+
+$('[data-library]').forEach(button => {
+  button.addEventListener('click', showLibrary);
+});
+
+$('#queueButton').addEventListener('click', () => {
+  const open = !queuePopover.classList.contains('show');
+  queuePopover.classList.toggle('show', open);
+  queuePopover.setAttribute('aria-hidden', String(!open));
+  if (open) renderQueue();
+});
+
+$('#closeQueue').addEventListener('click', () => {
+  queuePopover.classList.remove('show');
+  queuePopover.setAttribute('aria-hidden', 'true');
+});
+
+document.addEventListener('click', event => {
+  if (
+    queuePopover.classList.contains('show') &&
+    !queuePopover.contains(event.target) &&
+    !$('#queueButton').contains(event.target)
+  ) {
+    queuePopover.classList.remove('show');
+    queuePopover.setAttribute('aria-hidden', 'true');
+  }
 });
 
 audio.addEventListener('play', () => {
@@ -488,6 +620,7 @@ audio.volume = Number(volume.value);
 const bootstrap = async () => {
   renderSources();
   renderQuickGrid();
+  renderQueue();
 
   try {
     const response = await fetch('/api/health');
