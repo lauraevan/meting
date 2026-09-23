@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     })),
     Promise.all(
       providers.map(provider =>
-        searchMetingProvider(provider, query, Math.max(limit, 12)).catch(() => ({
+        searchMetingProvider(provider, query, Math.max(limit, 12), requestedSource ? 3500 : 2100).catch(() => ({
           provider,
           ok: false,
           elapsedMs: null,
