@@ -1,8 +1,10 @@
 import {
   PLAYBACK_PROVIDERS,
+  PRIMARY_PROVIDER,
   clamp,
   mergeDeezerWithSources,
   searchDeezer,
+  searchMonochrome,
   searchMetingProvider
 } from '../server/music.js';
 
@@ -56,14 +58,18 @@ export default async function handler(req, res) {
       tracks: []
     })),
     Promise.all(
-      providers.map(provider =>
-        searchMetingProvider(provider, query, Math.max(limit, 12), requestedSource ? 3500 : 2100).catch(() => ({
+      providers.map(provider => {
+        const run = provider === PRIMARY_PROVIDER
+          ? searchMonochrome(query, Math.max(limit * 2, 20), requestedSource ? 4500 : 3200)
+          : searchMetingProvider(provider, query, Math.max(limit, 12), requestedSource ? 3500 : 2100);
+
+        return run.catch(() => ({
           provider,
           ok: false,
           elapsedMs: null,
           tracks: []
-        }))
-      )
+        }));
+      })
     )
       ]);
 

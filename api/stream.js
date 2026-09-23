@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { clamp, PLAYBACK_PROVIDERS, resolvePlayback } from '../server/music.js';
 
 export default async function handler(req, res) {
@@ -14,6 +15,38 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Meting-Playback-Source', source);
+
+    if (media.proxy) {
+      const headers = {
+        Accept: 'audio/*',
+        'User-Agent': 'Mozilla/5.0'
+      };
+      if (req.headers.range) headers.Range = req.headers.range;
+
+      const upstream = await fetch(media.url, {
+        headers,
+        redirect: 'follow'
+      });
+
+      if (!upstream.ok && upstream.status !== 206) {
+        throw new Error(`Primary stream returned ${upstream.status}`);
+      }
+      if (!upstream.body) {
+        throw new Error('Primary stream returned an empty body');
+      }
+
+      for (const header of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
+        const value = upstream.headers.get(header);
+        if (value) res.setHeader(header, value);
+      }
+      if (!upstream.headers.get('content-type')) {
+        res.setHeader('Content-Type', 'audio/flac');
+      }
+      res.status(upstream.status);
+      Readable.fromWeb(upstream.body).pipe(res);
+      return;
+    }
+
     return res.redirect(307, media.url);
   } catch (error) {
     return res.status(502).json({

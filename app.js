@@ -2,6 +2,7 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 const providerMeta = {
+  primary: { name: 'Lossless', short: 'HQ' },
   netease: { name: 'NetEase', short: 'NE' },
   tencent: { name: 'Tencent', short: 'QQ' },
   kugou: { name: 'KuGou', short: 'KG' },
@@ -107,7 +108,7 @@ const lyricsUrl = track => {
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
 
-  const candidates = ['netease', 'tencent', 'kugou', 'kuwo']
+  const candidates = ['primary', 'netease', 'tencent', 'kugou', 'kuwo']
     .filter((source, index, list) => source && list.indexOf(source) === index)
     .filter(source => track.sources?.[source]?.pic_id);
 
@@ -219,7 +220,7 @@ const showRecent = () => {
 };
 
 const renderSources = () => {
-  const providers = ['all', 'netease', 'tencent', 'kugou', 'kuwo'];
+  const providers = ['all', 'primary', 'netease', 'tencent', 'kugou', 'kuwo'];
   sourceList.innerHTML = providers.map(source => {
     const active = state.sourceFilter === source ? 'active' : '';
     const label = source === 'all' ? 'All sources' : providerMeta[source].name;

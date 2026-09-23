@@ -5,9 +5,10 @@ export default function handler(req, res) {
   res.status(200).json({
     ok: true,
     name: 'Meting API',
-    version: '0.3.0',
+    version: '0.4.0',
     metadata: 'deezer',
     artwork: 'meting',
-    playbackProviders: PLAYBACK_PROVIDERS
+    playbackProviders: PLAYBACK_PROVIDERS,
+    losslessPrimary: true
   });
 }
