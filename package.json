@@ -16,6 +16,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c --watch",
+    "demo": "npx vercel dev",
     "prepublishOnly": "npm run build",
     "test": "npm run build && node test/test.js",
     "example": "npm run build && node test/example.js",

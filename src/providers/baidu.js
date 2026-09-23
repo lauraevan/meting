@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import BaseProvider from './base.js';
 
 /**
- * 百度音乐平台提供者
+ * Baidu Music provider
  */
 export default class BaiduProvider extends BaseProvider {
   constructor(meting) {
@@ -11,7 +11,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取百度音乐的请求头配置
+   * Get Baidu Music request headers
    */
   getHeaders() {
     return {
@@ -24,7 +24,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 搜索歌曲
+   * Search for songs
    */
   search(keyword, option = {}) {
     return {
@@ -45,7 +45,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌曲详情
+   * Get song details
    */
   song(id) {
     return {
@@ -65,7 +65,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取专辑信息
+   * Get album information
    */
   album(id) {
     return {
@@ -83,7 +83,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取艺术家作品
+   * Get artist works
    */
   artist(id, limit = 50) {
     return {
@@ -104,7 +104,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取播放列表
+   * Get playlist
    */
   playlist(id) {
     return {
@@ -122,7 +122,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取音频播放链接
+   * Get audio playback URL
    */
   url(id, br = 320) {
     return {
@@ -142,7 +142,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌词
+   * Get lyrics
    */
   lyric(id) {
     return {
@@ -160,7 +160,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 获取封面图片
+   * Get cover artwork
    */
   async pic(id, size = 300) {
     const format = this.meting.isFormat;
@@ -172,7 +172,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 格式化百度音乐数据
+   * Format Baidu Music data
    */
   format(data) {
     return {
@@ -188,7 +188,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 处理百度音乐的编码/解码逻辑
+   * Handle Baidu Music encoding/decoding
    */
   async handleEncode(api) {
     if (api.encode === 'baidu_AESCBC') {
@@ -207,7 +207,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 百度音乐 AES 加密
+   * Baidu Music AES encryption
    */
   async aesEncrypt(api) {
     const key = 'DBEECF8C50FD160E';
@@ -226,7 +226,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 百度音乐 URL 解码
+   * Baidu Music URL decoding
    */
   urlDecode(result) {
     const data = JSON.parse(result);
@@ -255,7 +255,7 @@ export default class BaiduProvider extends BaseProvider {
   }
 
   /**
-   * 百度音乐歌词解码
+   * Baidu Music lyrics decoding
    */
   lyricDecode(result) {
     const data = JSON.parse(result);
@@ -267,10 +267,10 @@ export default class BaiduProvider extends BaseProvider {
     return JSON.stringify(lyricData);
   }
 
-  // ========== 私有工具方法 ==========
+  // ========== Private utility methods ==========
 
   /**
-   * 生成随机十六进制字符串
+   * Generate a random hexadecimal string
    */
   _getRandomHex(length) {
     return crypto.randomBytes(Math.ceil(length / 2))

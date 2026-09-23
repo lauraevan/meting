@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080808" />
+  <title>Meting</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="brand-copy">
+          <strong>Meting</strong>
+          <small>music</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-home>
+          <span class="nav-icon">⌂</span><span>Home</span>
+        </button>
+        <button class="nav-item" data-focus-search>
+          <span class="nav-icon">⌕</span><span>Search</span>
+        </button>
+        <button class="nav-item" data-library>
+          <span class="nav-icon">▣</span><span>Your Library</span>
+        </button>
+      </nav>
+
+      <div class="library-shortcuts">
+        <div class="section-heading">Your music</div>
+        <button class="library-item" data-library>
+          <span class="library-icon liked-icon">♥</span>
+          <span><strong>Liked Songs</strong><small>Local collection</small></span>
+        </button>
+        <button class="library-item" data-home>
+          <span class="library-icon recent-icon">↺</span>
+          <span><strong>Recently played</strong><small>Current session</small></span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-heading">Playback sources</div>
+        <div class="source-list" id="sourceList"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="api-badge">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Meting API</strong>
+            <small id="apiStatus">Connecting…</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="history-actions">
+          <button class="icon-button" data-home title="Home">⌂</button>
+        </div>
+
+        <form class="search" id="searchForm">
+          <span class="search-icon">⌕</span>
+          <input id="searchInput" autocomplete="off" placeholder="What do you want to play?" />
+          <kbd>⌘K</kbd>
+        </form>
+
+        <div class="top-actions">
+          <div class="speed-pill" role="status"><span class="pulse-dot"></span><span id="speedText">Ready</span></div>
+          <button class="profile-button" title="Meting">M</button>
+        </div>
+      </header>
+
+      <section class="content" id="content">
+        <section class="section-block quick-section">
+          <div class="section-title-row">
+            <div>
+              <h2>Listen now</h2>
+              <p>Pick an artist or search the catalog</p>
+            </div>
+            <button class="text-button" id="surpriseButton">Surprise me ↗</button>
+          </div>
+          <div class="quick-grid" id="quickGrid"></div>
+        </section>
+
+        <section class="section-block results-section" id="resultsSection">
+          <div class="section-title-row">
+            <div>
+              <h2 id="resultsTitle">Tracks</h2>
+              <p id="resultsSubtitle">Search for something to play</p>
+            </div>
+            <div class="result-meta" id="resultMeta"></div>
+          </div>
+          <div class="tracks" id="tracks"></div>
+        </section>
+      </section>
+    </main>
+
+    <aside class="now-panel">
+      <div class="now-panel-head">
+        <span>Now playing</span>
+        <button class="icon-button" id="collapseNow" title="Now playing">•••</button>
+      </div>
+
+      <div class="now-art-wrap">
+        <div class="now-art placeholder" id="nowArt"></div>
+      </div>
+
+      <div class="now-copy">
+        <div class="now-title" id="nowTitle">Nothing playing</div>
+        <div class="now-artist" id="nowArtist">Choose something from the list</div>
+      </div>
+
+      <div class="now-card">
+        <div class="now-card-title">Playback</div>
+        <div class="source-detail">
+          <span class="source-icon" id="nowSourceIcon">M</span>
+          <div>
+            <strong id="nowSource">Waiting</strong>
+            <small id="nowQuality">Automatic source selection</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="lyrics-card">
+        <div class="lyrics-head">
+          <strong>Lyrics</strong>
+          <span id="lyricsStatus">Idle</span>
+        </div>
+        <div class="lyrics" id="lyrics">Lyrics will appear here when available.</div>
+      </div>
+    </aside>
+
+    <footer class="player">
+      <div class="player-track">
+        <div class="mini-art placeholder" id="miniArt"></div>
+        <div class="mini-copy">
+          <strong id="miniTitle">Select a track</strong>
+          <span id="miniArtist">Meting</span>
+        </div>
+        <button class="heart-button" id="heartButton" aria-label="Favorite">♡</button>
+      </div>
+
+      <div class="player-center">
+        <div class="player-controls">
+          <button class="player-icon" id="shuffleButton" title="Shuffle">⌘</button>
+          <button class="player-icon" id="prevButton" title="Previous">◀</button>
+          <button class="play-button" id="playButton" aria-label="Play">▶</button>
+          <button class="player-icon" id="nextButton" title="Next">▶</button>
+          <button class="player-icon" id="repeatButton" title="Repeat">↻</button>
+        </div>
+        <div class="progress-row">
+          <span id="currentTime">0:00</span>
+          <input type="range" min="0" max="1000" value="0" id="progress" />
+          <span id="duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="player-right">
+        <span class="volume-icon">◖</span>
+        <input type="range" min="0" max="1" step="0.01" value="0.82" id="volume" />
+        <button class="queue-button" id="queueButton">Queue <span id="queueCount">0</span></button>
+      </div>
+      <audio id="audio" preload="metadata"></audio>
+    </footer>
+  </div>
+
+  <div class="queue-popover" id="queuePopover" aria-hidden="true">
+    <div class="queue-head">
+      <div><strong>Up next</strong><small id="queueMeta">Nothing queued</small></div>
+      <button class="icon-button" id="closeQueue">×</button>
+    </div>
+    <div class="queue-list" id="queueList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

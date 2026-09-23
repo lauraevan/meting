@@ -1,102 +1,103 @@
-# Meting 架构重构说明
+# Meting Architecture Refactor
 
-## 重构概述
+## Refactor Overview
 
-本次重构将原本单一文件中的不同音乐厂商逻辑抽离到独立的 Provider 文件中，采用了标准的 Provider 模式，提高了代码的可维护性和扩展性。
+This refactor moves the logic for each music provider out of the original monolithic file and into independent Provider files. It uses a standard Provider pattern to improve maintainability and extensibility.
 
-## 新架构结构
+## New Architecture
 
 ```
 src/
-├── meting.js                 # 主入口文件（重构后）
-├── meting-original.js       # 原始文件备份
-└── providers/               # 音乐平台提供者目录
-    ├── index.js            # Provider 工厂类
-    ├── base.js             # 基础 Provider 接口
-    ├── netease.js          # 网易云音乐 Provider
-    ├── tencent.js          # 腾讯音乐 Provider
-    ├── kugou.js            # 酷狗音乐 Provider
-    ├── baidu.js            # 百度音乐 Provider
-    └── kuwo.js             # 酷我音乐 Provider
+├── meting.js                 # Main entry point (refactored)
+├── meting-original.js        # Backup of the original file
+└── providers/                # Music platform provider directory
+    ├── index.js              # Provider factory
+    ├── base.js               # Base Provider interface
+    ├── netease.js            # NetEase Cloud Music Provider
+    ├── tencent.js            # Tencent Music Provider
+    ├── kugou.js              # KuGou Music Provider
+    ├── baidu.js              # Baidu Music Provider
+    └── kuwo.js               # Kuwo Music Provider
 ```
 
-## 架构优势
+## Architecture Benefits
 
-### 1. 单一职责原则
-- 每个 Provider 只负责一个音乐平台的逻辑
-- 主 Meting 类只负责协调和通用功能
+### 1. Single Responsibility Principle
+- Each Provider is responsible for the logic of one music platform.
+- The main Meting class only handles coordination and shared functionality.
 
-### 2. 开放封闭原则
-- 添加新平台只需创建新的 Provider，无需修改现有代码
-- 修改某个平台的逻辑不会影响其他平台
+### 2. Open/Closed Principle
+- New platforms can be added by creating a new Provider without rewriting existing providers.
+- Changes to one platform do not affect the others.
 
-### 3. 内部闭环设计
-- 每个 Provider 内部处理自己的编码/解码逻辑
-- 避免了主类中的方法映射和统一处理
-- 真正实现了平台逻辑的完全隔离
+### 3. Self-Contained Provider Design
+- Each Provider handles its own encoding and decoding logic.
+- This avoids method mapping and platform-specific processing in the main class.
+- Platform logic stays fully isolated.
 
-### 4. 代码组织清晰
-- 每个文件职责明确，便于维护
-- 相关功能聚合在一起
-- 版本号在构建时从 package.json 注入，避免运行时文件读取
+### 4. Clear Code Organization
+- Every file has a clear responsibility and is easier to maintain.
+- Related functionality is grouped together.
+- The version number is injected from `package.json` at build time instead of reading files at runtime.
 
-## 核心组件
+## Core Components
 
-### BaseProvider 基础类
-所有平台 Provider 的基础接口，定义了标准的方法：
-- `getHeaders()`: 获取请求头配置
-- `search()`: 搜索功能
-- `song()`: 获取歌曲详情
-- `album()`: 获取专辑信息
-- `artist()`: 获取艺术家作品
-- `playlist()`: 获取播放列表
-- `url()`: 获取播放链接
-- `lyric()`: 获取歌词
-- `pic()`: 获取封面图片
-- `format()`: 数据格式化
-- `encode()`: 请求编码（如需要）
-- `urlDecode()`: URL解码（如需要）
-- `lyricDecode()`: 歌词解码（如需要）
+### BaseProvider Base Class
+The base interface for all platform Providers defines the standard methods:
+- `getHeaders()`: Get request header configuration.
+- `search()`: Search.
+- `song()`: Get song details.
+- `album()`: Get album information.
+- `artist()`: Get an artist's works.
+- `playlist()`: Get a playlist.
+- `url()`: Get a playback URL.
+- `lyric()`: Get lyrics.
+- `pic()`: Get cover artwork.
+- `format()`: Format data.
+- `encode()`: Encode a request when required.
+- `urlDecode()`: Decode a URL response when required.
+- `lyricDecode()`: Decode lyrics when required.
 
-### ProviderFactory 工厂类
-负责创建和管理 Provider 实例：
-- `create(platform, meting)`: 创建指定平台的 Provider
-- `getSupportedPlatforms()`: 获取支持的平台列表
-- `isSupported(platform)`: 检查平台是否支持
+### ProviderFactory
+Creates and manages Provider instances:
+- `create(platform, meting)`: Create a Provider for the requested platform.
+- `getSupportedPlatforms()`: Return the supported platform list.
+- `isSupported(platform)`: Check whether a platform is supported.
 
-### 主 Meting 类
-协调各个 Provider，提供统一的 API 接口：
-- 保持原有的公共 API 不变
-- 简化为纯粹的协调者角色
-- 将具体执行逻辑完全委托给 Provider
-- 版本号在构建时注入，无运行时开销
+### Main Meting Class
+Coordinates Providers and exposes a unified API:
+- Keeps the original public API intact.
+- Acts as a lightweight coordinator.
+- Delegates platform-specific execution to the Provider.
+- Receives its version number at build time with no runtime filesystem overhead.
 
-## 使用方式
+## Usage
 
-重构后的使用方式与原版完全兼容：
+The refactored API remains compatible with the original usage:
 
 ```javascript
 import Meting from './src/meting.js';
 
-// 创建实例
+// Create an instance
 const meting = new Meting('netease');
 
-// 或者动态切换平台
+// Or switch providers dynamically
 meting.site('tencent');
 
-// 使用 API（与原版完全相同）
-const result = await meting.search('稻香');
+// Use the API exactly as before
+const result = await meting.search('Jay Chou');
 ```
 
-## 扩展新平台
+## Adding a New Platform
 
-添加新平台只需要：
+To add another provider:
 
-1. 在 `src/providers/` 下创建新的 Provider 文件
-2. 继承 `BaseProvider` 并实现所需方法
-3. 在 `src/providers/index.js` 中注册新 Provider
+1. Create a Provider file under `src/providers/`.
+2. Extend `BaseProvider` and implement the required methods.
+3. Register the Provider in `src/providers/index.js`.
 
-示例：
+Example:
+
 ```javascript
 // src/providers/newplatform.js
 import BaseProvider from './base.js';
@@ -108,49 +109,50 @@ export default class NewPlatformProvider extends BaseProvider {
   }
 
   getHeaders() {
-    // 实现平台特定的请求头
+    // Implement platform-specific headers
   }
 
   search(keyword, option = {}) {
-    // 实现搜索逻辑
+    // Implement search logic
   }
 
-  // ... 实现其他必需方法
+  // ... implement the other required methods
 }
 ```
 
-## 构建系统
+## Build System
 
-### Rollup 构建配置
-- 使用自定义插件在构建时注入版本号
-- 源码中使用 `__VERSION__` 占位符
-- 构建时自动替换为 package.json 中的实际版本
-- 避免运行时文件系统读取，提升性能
+### Rollup Configuration
+- Uses a custom plugin to inject the version number at build time.
+- Source code uses the `__VERSION__` placeholder.
+- The build automatically replaces it with the actual version from `package.json`.
+- This avoids runtime filesystem reads.
 
-### 构建流程
+### Build Process
+
 ```bash
-npm run build  # 构建 ESM 和 CJS 两种格式
+npm run build  # Build both ESM and CJS formats
 ```
 
-构建后：
-- `lib/meting.esm.js` - ES Module 格式
-- `lib/meting.js` - CommonJS 格式
+Build output:
+- `lib/meting.esm.js` - ES Module format.
+- `lib/meting.js` - CommonJS format.
 
-## 兼容性
+## Compatibility
 
-- ✅ 保持原有 API 接口不变
-- ✅ 保持原有使用方式不变
-- ✅ 保持原有功能特性不变
-- ✅ 支持原有的链式调用
-- ✅ 支持原有的配置方法
-- ✅ 构建时版本号注入，无运行时开销
+- ✅ Original API remains unchanged.
+- ✅ Original usage remains unchanged.
+- ✅ Existing functionality remains available.
+- ✅ Existing chainable calls remain supported.
+- ✅ Existing configuration methods remain supported.
+- ✅ Version injection happens at build time with no runtime filesystem overhead.
 
-## 测试验证
+## Test Verification
 
-已通过以下测试：
-- 基础功能测试（`test/test.js`）
-- 架构验证测试（`test/simple-test.js`）
-- 版本号注入测试（`test/build-version-test.js`）
-- 各平台 Provider 测试
+The project includes tests for:
+- Core functionality (`test/test.js`).
+- Architecture behavior.
+- Build-time version injection.
+- Individual platform Providers.
 
-重构成功保持了所有原有功能，同时大大提升了代码的可维护性和扩展性，并优化了运行时性能。
+The refactor preserves the original behavior while making the codebase easier to maintain, extend, and optimize.
