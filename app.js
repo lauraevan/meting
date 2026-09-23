@@ -19,6 +19,8 @@ const quickSearches = [
 const state = {
   query: '',
   tracks: [],
+  searchTracks: [],
+  recentTracks: [],
   queue: [],
   currentIndex: -1,
   current: null,
@@ -179,6 +181,13 @@ const renderQueue = () => {
 };
 
 const showHome = () => {
+  if (state.searchTracks.length) {
+    state.tracks = [...state.searchTracks];
+    resultsTitle.textContent = `Results for “${state.query}”`;
+    resultsSubtitle.textContent = 'From available music sources';
+    resultMeta.textContent = `${state.tracks.length} tracks`;
+    renderTracks();
+  }
   $('#content').scrollTo({ top: 0, behavior: 'smooth' });
   $$('.nav-item').forEach(item => item.classList.remove('active'));
   $('[data-home].nav-item')?.classList.add('active');
@@ -190,10 +199,22 @@ const showLibrary = () => {
     return;
   }
 
+  state.searchRequest += 1;
   state.tracks = [...state.likedTracks];
   resultsTitle.textContent = 'Liked Songs';
   resultsSubtitle.textContent = 'Saved on this device';
   resultMeta.textContent = `${state.tracks.length} saved`;
+  renderTracks();
+  $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const showRecent = () => {
+  if (!state.recentTracks.length) return toast('Play a track to start your listening history.');
+  state.searchRequest += 1;
+  state.tracks = [...state.recentTracks];
+  resultsTitle.textContent = 'Recently played';
+  resultsSubtitle.textContent = 'This session';
+  resultMeta.textContent = `${state.tracks.length} tracks`;
   renderTracks();
   $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
@@ -404,6 +425,7 @@ const playIndex = async index => {
 
   state.currentIndex = index;
   state.current = track;
+  state.recentTracks = [track, ...state.recentTracks.filter(item => item.id !== track.id)].slice(0, 30);
   state.failedSources = new Set();
   state.playbackRequest += 1;
 
@@ -459,13 +481,14 @@ const search = async (query, { scroll = true } = {}) => {
     if (!response.ok) throw new Error(data.error || 'Search failed');
 
     state.tracks = data.tracks || [];
+    state.searchTracks = [...state.tracks];
     resultsSubtitle.textContent = 'From available music sources';
     for (const provider of data.providers || []) {
       state.latencies[provider.provider] = provider.elapsedMs;
     }
 
     const clientElapsed = Math.round(performance.now() - started);
-    speedText.textContent = `${data.elapsedMs ?? clientElapsed}ms API`;
+    speedText.textContent = `${clientElapsed}ms API`;
     const sourceCount = (data.providers || []).filter(item => item.ok && item.count > 0).length;
     resultMeta.textContent = `${state.tracks.length} tracks · ${sourceCount} sources`;
 
@@ -558,6 +581,10 @@ $$('[data-home]').forEach(button => {
 
 $$('[data-library]').forEach(button => {
   button.addEventListener('click', showLibrary);
+});
+
+$$('[data-recent]').forEach(button => {
+  button.addEventListener('click', showRecent);
 });
 
 $('#queueButton').addEventListener('click', () => {
