@@ -3,7 +3,7 @@ import { babel } from '@rollup/plugin-babel';
 import { readFileSync } from 'fs';
 import terser from '@rollup/plugin-terser'
 
-// 读取 package.json 中的版本号
+// Read the version from package.json
 const packageInfo = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 export default {
@@ -24,7 +24,7 @@ export default {
       preferBuiltins: true
     }),
     babel({ babelHelpers: 'bundled' }),
-    // 版本号注入插件
+    // Version injection plugin
     {
       name: 'inject-version',
       transform(code, id) {
