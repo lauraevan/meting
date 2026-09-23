@@ -26,6 +26,7 @@ const state = {
 };
 
 const audio = $('#audio');
+let previewTimer;
 const SEARCH_CACHE_KEY = 'meting:search:v2';
 const SEARCH_CACHE_TTL = 15 * 60 * 1000;
 const searchCache = (() => {
@@ -89,6 +90,17 @@ const artworkUrl = (track, size = 500) =>
   track.pic_id ? `/api/artwork?id=${encodeURIComponent(track.pic_id)}&size=${size}` : '';
 const streamUrl = track => `/api/stream?id=${encodeURIComponent(track.id)}&br=320`;
 const lyricsUrl = track => `/api/lyrics?id=${encodeURIComponent(track.id)}`;
+
+// Warm the actual player element. Keeping its src when Play is tapped lets the
+// browser reuse its existing connection and buffered media instead of starting
+// another stream request. Never replace an active song just to preload one.
+const prepareTrack = track => {
+  if (!track || state.current) return;
+  const url = streamUrl(track);
+  if (audio.getAttribute('src') === url) return;
+  audio.src = url;
+  audio.load();
+};
 
 const setArtwork = (element, track, size) => {
   if (!element || !track) return;
@@ -275,7 +287,22 @@ const renderTracks = () => {
   });
 
   hydrateArtwork();
+  prepareTrack(state.tracks[0]);
 };
+
+const prepareHoveredTrack = event => {
+  if (state.current) return;
+  const row = event.target.closest('.track-row[data-index]');
+  if (!row || !tracksEl.contains(row)) return;
+  const track = state.tracks[Number(row.dataset.index)];
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => prepareTrack(track), 100);
+};
+tracksEl.addEventListener('pointerover', prepareHoveredTrack);
+tracksEl.addEventListener('focusin', prepareHoveredTrack);
+tracksEl.addEventListener('pointerout', event => {
+  if (!event.target.closest('.track-row[data-index]')?.contains(event.relatedTarget)) clearTimeout(previewTimer);
+});
 
 const updatePlayerUI = () => {
   const track = state.current;
@@ -326,7 +353,8 @@ const startCurrentSource = async (request = state.playbackRequest) => {
   const track = state.current;
   if (!track || request !== state.playbackRequest) return;
   speedText.textContent = 'Loading track…';
-  audio.src = streamUrl(track);
+  const url = streamUrl(track);
+  if (audio.getAttribute('src') !== url) audio.src = url;
 
   try {
     await audio.play();
@@ -347,6 +375,7 @@ const playIndex = async index => {
   const track = state.tracks[index];
   if (!track) return;
 
+  clearTimeout(previewTimer);
   state.currentIndex = index;
   state.current = track;
   state.recentTracks = [track, ...state.recentTracks.filter(item => item.id !== track.id)].slice(0, 30);
