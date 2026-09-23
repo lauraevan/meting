@@ -225,10 +225,20 @@ const renderSkeletons = () => {
   `).join('');
 };
 
+const artworkObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      artworkObserver.unobserve(entry.target);
+      const track = state.tracks[Number(entry.target.dataset.index)];
+      if (track) setArtwork(entry.target, track, 220);
+    }
+  }, { rootMargin: '160px' }) : null;
 const hydrateArtwork = () => {
+  artworkObserver?.disconnect();
   $$('.track-art[data-index]').forEach(el => {
-    const track = state.tracks[Number(el.dataset.index)];
-    setArtwork(el, track, 220);
+    if (artworkObserver) artworkObserver.observe(el);
+    else setArtwork(el, state.tracks[Number(el.dataset.index)], 220);
   });
 };
 const renderTracks = () => {
