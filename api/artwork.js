@@ -1,4 +1,4 @@
-import { findAppleArtwork } from './_lib.js';
+import { findAppleArtwork } from '../server/music.js';
 
 export default async function handler(req, res) {
   const title = String(req.query.title || '').trim();
