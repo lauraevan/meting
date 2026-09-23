@@ -264,73 +264,25 @@ export const getLyrics = async (source, id) => {
   return safeParse(raw, { lyric: '', tlyric: '' });
 };
 
-export const findAppleArtwork = async ({ title, artist, album = '', size = 900 }) => {
-  const token = process.env.APPLE_MUSIC_DEVELOPER_TOKEN;
-  if (!token) {
-    const error = new Error('Apple Music developer token is not configured');
-    error.code = 'APPLE_TOKEN_MISSING';
-    throw error;
+export const resolveArtwork = async (source, id, size = 900) => {
+  if (!PLAYBACK_PROVIDERS.includes(source)) {
+    throw new Error('Unsupported artwork provider');
   }
 
-  const storefront = process.env.APPLE_MUSIC_STOREFRONT || 'us';
-  const searchUrl = new URL(`https://api.music.apple.com/v1/catalog/${storefront}/search`);
-  searchUrl.searchParams.set('term', [title, artist, album].filter(Boolean).join(' '));
-  searchUrl.searchParams.set('types', 'songs');
-  searchUrl.searchParams.set('limit', '5');
-
-  const response = await fetch(searchUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Apple Music search failed with ${response.status}`);
+  if (!id) {
+    throw new Error('Missing artwork ID');
   }
 
-  const payload = await response.json();
-  const songs = payload?.results?.songs?.data || [];
+  const meting = new Meting(source);
+  meting.format(true);
 
-  let best = null;
-  let bestScore = -1;
+  const requested = clamp(size, 64, 2000, 900);
+  const raw = await meting.pic(id, requested);
+  const parsed = safeParse(raw, {});
 
-  for (const song of songs) {
-    const attrs = song?.attributes || {};
-    const candidate = {
-      name: attrs.name || '',
-      artist: [attrs.artistName || ''],
-      album: attrs.albumName || ''
-    };
-    const score = matchScore(
-      { name: title, artist: [artist], album },
-      candidate
-    );
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = attrs;
-    }
+  if (!parsed?.url) {
+    throw new Error('No artwork URL returned by provider');
   }
 
-  if (!best?.artwork?.url) {
-    throw new Error('Apple Music artwork not found');
-  }
-
-  const requested = clamp(size, 64, 3000, 900);
-  let url = best.artwork.url
-    .replaceAll('{w}', String(requested))
-    .replaceAll('{h}', String(requested));
-
-  if (url.includes('{f}')) url = url.replaceAll('{f}', 'jpg');
-
-  return {
-    url,
-    width: best.artwork.width || requested,
-    height: best.artwork.height || requested,
-    bgColor: best.artwork.bgColor || null,
-    textColor1: best.artwork.textColor1 || null,
-    textColor2: best.artwork.textColor2 || null,
-    match: Number(bestScore.toFixed(3))
-  };
+  return parsed;
 };
