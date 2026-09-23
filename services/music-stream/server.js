@@ -4,7 +4,9 @@ import { Readable } from 'node:stream';
 
 const port = Number(process.env.PORT || 8080);
 const executable = process.env.YTDLP_PATH || './services/music-stream/yt-dlp';
-const resolverReady = spawnSync(executable, ['--version'], { timeout: 3000 }).status === 0;
+const resolverCheck = spawnSync(executable, ['--version'], { timeout: 12000, encoding: 'utf8' });
+const resolverReady = resolverCheck.status === 0;
+if (!resolverReady) console.error('yt-dlp unavailable:', resolverCheck.error?.message || resolverCheck.stderr?.slice(0, 300) || `exit ${resolverCheck.status}`);
 const cache = new Map();
 const pending = new Map();
 const validId = id => /^[A-Za-z0-9_-]{11}$/.test(id);
