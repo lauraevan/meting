@@ -136,22 +136,24 @@ export const searchMetingProvider = async (provider, query, limit, timeoutMs = 2
   };
 };
 
-export const searchDeezer = async (query, limit) => {
+export const searchDeezer = async (query, limit, timeoutMs = 2800) => {
   const started = performance.now();
   const url = new URL('https://api.deezer.com/search');
   url.searchParams.set('q', query);
   url.searchParams.set('limit', String(limit));
 
-  const response = await withTimeout(
-    fetch(url, {
+  let response;
+  try {
+    response = await fetch(url, {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'Meting-Demo/0.2'
-      }
-    }),
-    2800,
-    null
-  );
+      },
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+  } catch {
+    response = null;
+  }
 
   if (!response?.ok) {
     return {

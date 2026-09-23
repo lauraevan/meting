@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       const started = performance.now();
       const [music, metadata] = await Promise.all([
         searchQijieya(query, limit),
-        searchDeezer(query, Math.max(limit * 2, 20)).catch(() => ({ tracks: [] }))
+        searchDeezer(query, Math.max(limit * 2, 20), 1100).catch(() => ({ tracks: [] }))
       ]);
       if (!music.ok) throw new Error('Music search is temporarily unavailable');
       const tracks = music.tracks.map(track => {
