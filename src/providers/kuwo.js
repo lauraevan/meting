@@ -1,7 +1,7 @@
 import BaseProvider from './base.js';
 
 /**
- * 酷我音乐平台提供者
+ * Kuwo Music provider
  */
 export default class KuwoProvider extends BaseProvider {
   constructor(meting) {
@@ -10,7 +10,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取酷我音乐的请求头配置
+   * Get Kuwo Music request headers
    */
   getHeaders() {
     return {
@@ -23,7 +23,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 搜索歌曲
+   * Search for songs
    */
   search(keyword, option = {}) {
     return {
@@ -40,7 +40,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌曲详情
+   * Get song details
    */
   song(id) {
     return {
@@ -55,7 +55,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取专辑信息
+   * Get album information
    */
   album(id) {
     return {
@@ -72,7 +72,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取艺术家作品
+   * Get artist works
    */
   artist(id, limit = 50) {
     return {
@@ -89,7 +89,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取播放列表
+   * Get playlist
    */
   playlist(id) {
     return {
@@ -106,7 +106,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取音频播放链接
+   * Get audio playback URL
    */
   url(id, br = 320) {
     return {
@@ -122,7 +122,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌词
+   * Get lyrics
    */
   lyric(id) {
     return {
@@ -137,7 +137,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 获取封面图片
+   * Get cover artwork
    */
   async pic(id, size = 300) {
     const format = this.meting.isFormat;
@@ -149,7 +149,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 格式化酷我音乐数据
+   * Format Kuwo Music data
    */
   format(data) {
     return {
@@ -165,7 +165,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 处理酷我音乐的解码逻辑
+   * Handle Kuwo Music decoding
    */
   async handleDecode(decodeType, data) {
     if (decodeType === 'kuwo_url') {
@@ -177,7 +177,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 酷我音乐 URL 解码
+   * Kuwo Music URL decoding
    */
   urlDecode(result) {
     const data = JSON.parse(result);
@@ -199,7 +199,7 @@ export default class KuwoProvider extends BaseProvider {
   }
 
   /**
-   * 酷我音乐歌词解码
+   * Kuwo Music lyrics decoding
    */
   lyricDecode(result) {
     const data = JSON.parse(result);
