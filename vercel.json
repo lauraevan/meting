@@ -5,7 +5,9 @@
     "api/artwork.js": { "maxDuration": 15 },
     "api/lyrics.js": { "maxDuration": 15 },
     "api/health.js": { "maxDuration": 15 },
-    "api/stream.js": { "maxDuration": 300 }
+    "api/stream.js": { "maxDuration": 300 },
+    "api/latency-asia.js": { "maxDuration": 15, "regions": ["hkg1"] },
+    "api/latency-us.js": { "maxDuration": 15, "regions": ["iad1"] }
   },
   "headers": [
     {
