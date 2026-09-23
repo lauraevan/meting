@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import BaseProvider from './base.js';
 
 /**
- * 酷狗音乐平台提供者
+ * KuGou Music provider
  */
 export default class KugouProvider extends BaseProvider {
   constructor(meting) {
@@ -11,7 +11,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取酷狗音乐的请求头配置
+   * Get KuGou Music request headers
    */
   getHeaders() {
     return {
@@ -21,7 +21,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 搜索歌曲
+   * Search for songs
    */
   search(keyword, option = {}) {
     return {
@@ -45,7 +45,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌曲详情
+   * Get song details
    */
   song(id) {
     return {
@@ -61,7 +61,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取专辑信息
+   * Get album information
    */
   album(id) {
     return {
@@ -80,7 +80,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取艺术家作品
+   * Get artist works
    */
   artist(id, limit = 50) {
     return {
@@ -99,7 +99,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取播放列表
+   * Get playlist
    */
   playlist(id) {
     return {
@@ -118,8 +118,8 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取音频播放链接
-   * 有 cookie 时走新接口（songinfo + 签名），无 cookie 走老接口
+   * Get audio playback URL
+   * Use the newer songinfo + signature endpoint when a cookie is available; otherwise use the legacy endpoint
    */
   url(id, br = 320) {
     const cookie = this.parseCookie(this.meting.header['Cookie'] || '');
@@ -149,7 +149,7 @@ export default class KugouProvider extends BaseProvider {
       };
     }
 
-    // 老接口，无需 cookie
+    // Legacy endpoint; no cookie required
     return {
       method: 'POST',
       url: 'http://media.store.kugou.com/v1/get_res_privilege',
@@ -173,7 +173,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取歌词
+   * Get lyrics
    */
   lyric(id) {
     return {
@@ -191,7 +191,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 获取封面图片
+   * Get cover artwork
    */
   async pic(id, size = 300) {
     const format = this.meting.isFormat;
@@ -204,7 +204,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 格式化酷狗音乐数据
+   * Format KuGou Music data
    */
   format(data) {
     const filename = data.filename || data.fileName;
@@ -233,7 +233,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 解析 Cookie 字符串为对象
+   * Parse a Cookie string into an object
    */
   parseCookie(cookieStr) {
     const cookies = {};
@@ -250,7 +250,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 生成酷狗 API 签名
+   * Generate a KuGou API signature
    */
   getSignature(params) {
     const MD5_KEY = 'NVPh5oo715z5DIWAeQlhMDsWXXQV4hwt';
@@ -262,7 +262,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 处理酷狗音乐的解码逻辑
+   * Handle KuGou Music decoding
    */
   async handleDecode(decodeType, data) {
     if (decodeType === 'kugou_url_new') {
@@ -276,7 +276,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 构建带签名的 songinfo 请求 URL
+   * Build the signed songinfo request URL
    */
   buildSonginfoUrl(params) {
     const signature = this.getSignature(params);
@@ -287,9 +287,9 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 酷狗音乐 URL 解码（新接口，需要 cookie）
-   * 第一步用 hash 查询获取 encode_album_audio_id，
-   * 第二步用 encode_album_audio_id 查询获取播放链接
+   * KuGou Music URL decoding (new endpoint; cookie required)
+   * First query by hash to obtain encode_album_audio_id,
+   * then query by encode_album_audio_id to obtain the playback URL
    */
   async urlDecodeNew(result) {
     try {
@@ -299,7 +299,7 @@ export default class KugouProvider extends BaseProvider {
         return JSON.stringify({ url: '', size: 0, br: -1 });
       }
 
-      // 第二步：用 encode_album_audio_id 重新查询
+      // Second step: query again with encode_album_audio_id
       const cookie = this.parseCookie(this.meting.header['Cookie'] || '');
       const now = Date.now();
       const params = {
@@ -338,7 +338,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 酷狗音乐 URL 解码（老接口，无需 cookie）
+   * KuGou Music URL decoding (legacy endpoint; no cookie required)
    */
   async urlDecodeLegacy(result) {
     try {
@@ -384,7 +384,7 @@ export default class KugouProvider extends BaseProvider {
   }
 
   /**
-   * 酷狗音乐歌词解码
+   * KuGou Music lyrics decoding
    */
   async lyricDecode(result) {
     const data = JSON.parse(result);
