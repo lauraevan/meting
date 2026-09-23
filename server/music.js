@@ -157,7 +157,6 @@ export const searchDeezer = async (query, limit) => {
       metadataSource: 'deezer',
       deezerUrl: track.link || '',
       preview: track.preview || '',
-      artwork: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium || track.album?.cover || ''
     }))
   };
 };
@@ -218,7 +217,6 @@ export const mergeDeezerWithSources = (deezerTracks, providerResults, limit) => 
       explicit: false,
       rank: 0,
       metadataSource: 'provider-fallback',
-      artwork: '',
       sources: {
         [track.source]: {
           ...sourcePayload(track),
