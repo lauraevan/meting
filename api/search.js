@@ -1,4 +1,4 @@
-import { clamp, matchScore, searchDeezer } from '../server/music.js';
+import { bestMetadataMatch, clamp, searchDeezer } from '../server/music.js';
 import { searchQijieya } from '../server/qijieya.js';
 import { catalogSearch } from '../server/catalog.js';
 
@@ -27,11 +27,9 @@ export default async function handler(req, res) {
       ]);
       if (!music.ok && !indexed.length) throw new Error('Music search is temporarily unavailable');
       const live = music.tracks.map(track => {
-        const best = (metadata.tracks || []).map(item => ({ item, score: matchScore(track, item) }))
-          .sort((a, b) => b.score - a.score)[0];
-        if (!best || best.score < 0.9) return track;
-        return { ...track, album: best.item.album, duration: best.item.duration,
-          explicit: best.item.explicit };
+        const match = bestMetadataMatch(track, metadata.tracks);
+        if (!match) return track;
+        return { ...track, album: match.album, duration: match.duration, explicit: match.explicit };
       });
       const seen = new Set();
       const tracks = [...live, ...indexed].filter(track => {

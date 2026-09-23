@@ -83,7 +83,20 @@ export const matchScore = (canonical, candidate) => {
   return (title * 0.62) + (artist * 0.30) + (album * 0.08);
 };
 
-export const normalizeMetingTrack = (track, provider) => {
+// Deezer lists only the primary artist, so a collaboration never matches the
+// full artist list. Score against the listed artist the candidate names.
+export const bestMetadataMatch = (track, candidates = [], threshold = 0.9) => {
+  let best = null;
+  for (const item of candidates) {
+    const named = new Set(item.artist.map(normalizeText));
+    const shared = track.artist.filter(artist => named.has(normalizeText(artist)));
+    const score = matchScore(shared.length ? { ...track, artist: shared } : track, item);
+    if (!best || score > best.score) best = { item, score };
+  }
+  return best && best.score >= threshold ? best.item : null;
+};
+
+export const normalizeMetingTrack =(track, provider) => {
   if (!track || typeof track !== 'object') return null;
 
   const artists = Array.isArray(track.artist)

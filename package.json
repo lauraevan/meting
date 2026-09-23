@@ -19,6 +19,7 @@
     "demo": "npx vercel dev",
     "prepublishOnly": "npm run build",
     "test": "npm run build && node test/test.js",
+    "test:scraper": "node --test test/catalog-build.test.js",
     "example": "npm run build && node test/example.js",
     "start": "npm run build && node test/example.js"
   },

@@ -46,11 +46,17 @@ lookup for queries the index cannot satisfy. The index stores song IDs and
 metadata, not audio or expiring media URLs; playback continues through the
 server-side stream proxy. Add search terms to `data/catalog-seeds.json` to
 expand coverage without changing the player.
-The scraper now follows up to four search pages per term and stops when the
-service runs out of results or repeats a page. This improves coverage, but
-the endpoint has no exhaustive catalog listing: a complete index requires a
-catalog export or a listing route from the owner. The Git-backed index is
-also bounded to 10,000 tracks; a full catalog needs dedicated storage.
+The scraper follows up to four search pages per term and stops when the
+service runs out of results or repeats a page. Each run searches every seed,
+then spends the rest of its budget (`SCRAPE_QUERY_BUDGET`, 60 searches by
+default) on artists discovered in the index, starting with those never
+searched and skipping any searched in the last seven days. Crawl dates live in
+`data/crawl-state.json`. The index splits collaborating artists, keeps one ID
+per recording, keeps album data learned in earlier runs, and removes songs not
+seen for 60 days. The endpoint has no exhaustive catalog listing, so a complete
+index still requires a catalog export or listing route from the owner, and the
+Git-backed index is bounded to 10,000 tracks. Run `npm run test:scraper` for
+the offline tests.
 
 ## Requirements
 

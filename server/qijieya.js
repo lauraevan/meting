@@ -21,12 +21,30 @@ const idFrom = (value, type) => {
   } catch { return ''; }
 };
 
+// The service joins collaborating artists with "/". Keep band names that
+// contain a slash intact.
+const SLASHED_NAMES = new Set(['ac/dc']);
+
+export const splitArtists = value => {
+  const parts = String(value || '').split('/').map(part => part.trim()).filter(Boolean);
+  const artists = [];
+  for (const part of parts) {
+    const previous = artists[artists.length - 1];
+    if (previous && SLASHED_NAMES.has(`${previous}/${part}`.toLowerCase())) {
+      artists[artists.length - 1] = `${previous}/${part}`;
+    } else if (!artists.includes(part)) {
+      artists.push(part);
+    }
+  }
+  return artists.length ? artists : ['Unknown artist'];
+};
+
 export const normalizeQijieyaTrack = item => {
   const id = idFrom(item?.url, 'url');
   if (!id || !item?.name) return null;
   return {
     id, pic_id: idFrom(item.pic, 'pic'),
-    name: String(item.name), artist: [String(item.artist || 'Unknown artist')],
+    name: String(item.name), artist: splitArtists(item.artist),
     album: '', duration: 0
   };
 };
