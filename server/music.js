@@ -88,7 +88,7 @@ export const searchMetingProvider = async (provider, query, limit) => {
 
   const raw = await withTimeout(
     meting.search(query, { page: 1, limit }),
-    2800,
+    2100,
     null
   );
 
