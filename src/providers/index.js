@@ -5,7 +5,7 @@ import BaiduProvider from './baidu.js';
 import KuwoProvider from './kuwo.js';
 
 /**
- * 音乐平台提供者工厂
+ * Music platform provider factory
  */
 export default class ProviderFactory {
   static providers = {
@@ -17,10 +17,10 @@ export default class ProviderFactory {
   };
 
   /**
-   * 创建指定平台的提供者实例
-   * @param {string} platform 平台名称
-   * @param {Object} meting Meting 实例
-   * @returns {BaseProvider} 平台提供者实例
+   * Create a provider instance for the specified platform
+   * @param {string} platform Platform name
+   * @param {Object} meting Meting instance
+   * @returns {BaseProvider} Platform provider instance
    */
   static create(platform, meting) {
     const ProviderClass = this.providers[platform];
@@ -31,17 +31,17 @@ export default class ProviderFactory {
   }
 
   /**
-   * 获取支持的平台列表
-   * @returns {string[]} 支持的平台名称数组
+   * Get the supported platform list
+   * @returns {string[]} Array of supported platform names
    */
   static getSupportedPlatforms() {
     return Object.keys(this.providers);
   }
 
   /**
-   * 检查平台是否支持
-   * @param {string} platform 平台名称
-   * @returns {boolean} 是否支持
+   * Check whether a platform is supported
+   * @param {string} platform Platform name
+   * @returns {boolean} Whether the platform is supported
    */
   static isSupported(platform) {
     return platform in this.providers;
